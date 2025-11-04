@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block title %}Estado del Sistema - Administración{% endblock %}
+
+{% block styles %}
+<style>
+.admin-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+}
+
+.status-card {
+    border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
+}
+
+.status-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.status-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.progress-custom {
+    height: 20px;
+    border-radius: 10px;
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.metric-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.status-good { color: #28a745; }
+.status-warning { color: #ffc107; }
+.status-danger { color: #dc3545; }
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.info-item {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.admin-navbar {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.admin-navbar .nav-link {
+    color: #667eea !important;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.admin-navbar .nav-link:hover {
+    color: #764ba2 !important;
+    transform: translateY(-1px);
+}
+
+.btn-logout {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+    border: none;
+    color: white;
+    border-radius: 20px;
+    padding: 8px 20px;
+    transition: all 0.3s ease;
+}
+
+.btn-logout:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Barra de navegación de administración -->
+<nav class="navbar navbar-expand-lg admin-navbar">
+    <div class="container-fluid">
+        <span class="navbar-brand">
+            Sesión de: <strong>{% if session.admin_username %}{{ session.admin_username }}{% else %}Admin{% endif %}</strong>
+        </span>
+        
+        <div class="navbar-nav ms-auto">
+            <a class="nav-link" href="{{ url_for('admin.view_logs') }}">
+                Logs
+            </a>
+            <a class="nav-link" href="{{ url_for('admin.system_status') }}">
+                Estado del Sistema
+            </a>
+            <a href="{{ url_for('admin_logout') }}" class="btn btn-logout ms-3">
+                Cerrar Sesión
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="admin-header text-center">
+        <h1>Estado del Sistema</h1>
+        <p class="mb-0">Monitoreo en tiempo real del rendimiento y recursos</p>
+    </div>
+    
+    {% if system_info.error %}
+    <div class="alert alert-warning" role="alert">
+        No se pudo obtener información completa del sistema: {{ system_info.error }}
+    </div>
+    {% endif %}
+    
+    <!-- Métricas Principales -->
+    <div class="row">
+        {% if system_info.cpu_percent is defined %}
+        <div class="col-md-3">
+            <div class="status-card">
+                <div class="card-body text-center">
+                    <div class="status-icon {% if system_info.cpu_percent < 70 %}status-good{% elif system_info.cpu_percent < 90 %}status-warning{% else %}status-danger{% endif %}">
+                        CPU
+                    </div>
+                    <div class="metric-value">{{ system_info.cpu_percent }}%</div>
+                    <div class="metric-label">Uso de CPU</div>
+                    <div class="progress progress-custom mt-2">
+                        <div class="progress-bar {% if system_info.cpu_percent < 70 %}bg-success{% elif system_info.cpu_percent < 90 %}bg-warning{% else %}bg-danger{% endif %}" 
+                             style="width: {{ system_info.cpu_percent }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if system_info.memory is defined %}
+        <div class="col-md-3">
+            <div class="status-card">
+                <div class="card-body text-center">
+                    <div class="status-icon {% if system_info.memory.percent < 70 %}status-good{% elif system_info.memory.percent < 90 %}status-warning{% else %}status-danger{% endif %}">
+                        RAM
+                    </div>
+                    <div class="metric-value">{{ system_info.memory.percent }}%</div>
+                    <div class="metric-label">Uso de RAM</div>
+                    <div class="progress progress-custom mt-2">
+                        <div class="progress-bar {% if system_info.memory.percent < 70 %}bg-success{% elif system_info.memory.percent < 90 %}bg-warning{% else %}bg-danger{% endif %}" 
+                             style="width: {{ system_info.memory.percent }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if system_info.disk is defined %}
+        <div class="col-md-3">
+            <div class="status-card">
+                <div class="card-body text-center">
+                    {% set disk_percent = (system_info.disk.used / system_info.disk.total * 100) | round(1) %}
+                    <div class="status-icon {% if disk_percent < 70 %}status-good{% elif disk_percent < 90 %}status-warning{% else %}status-danger{% endif %}">
+                        DISCO
+                    </div>
+                    <div class="metric-value">{{ disk_percent }}%</div>
+                    <div class="metric-label">Uso de Disco</div>
+                    <div class="progress progress-custom mt-2">
+                        <div class="progress-bar {% if disk_percent < 70 %}bg-success{% elif disk_percent < 90 %}bg-warning{% else %}bg-danger{% endif %}" 
+                             style="width: {{ disk_percent }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="col-md-3">
+            <div class="status-card">
+                <div class="card-body text-center">
+                    <div class="status-icon status-good">
+                        APP
+                    </div>
+                    <div class="metric-value">OK</div>
+                    <div class="metric-label">Estado App</div>
+                    <small class="text-muted">{% if app_info.debug_mode %}Debug{% else %}Producción{% endif %}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Información del Sistema -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="status-card">
+                <div class="card-header">
+                    <h5>Información del Sistema</h5>
+                </div>
+                <div class="card-body">
+                    <div class="info-grid">
+                        {% if system_info.platform %}
+                        <div class="info-item">
+                            <strong>Plataforma</strong><br>
+                            <small>{{ system_info.platform }}</small>
+                        </div>
+                        {% endif %}
+                        
+                        {% if system_info.python_version %}
+                        <div class="info-item">
+                            <strong>Python</strong><br>
+                            <small>{{ system_info.python_version }}</small>
+                        </div>
+                        {% endif %}
+                        
+                        {% if system_info.cpu_count %}
+                        <div class="info-item">
+                            <strong>CPU Cores</strong><br>
+                            <small>{{ system_info.cpu_count }}</small>
+                        </div>
+                        {% endif %}
+                        
+                        {% if system_info.memory %}
+                        <div class="info-item">
+                            <strong>RAM Total</strong><br>
+                            <small>{{ (system_info.memory.total / 1024**3) | round(1) }} GB</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="status-card">
+                <div class="card-header">
+                    <h5>Información de la Aplicación</h5>
+                </div>
+                <div class="card-body">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <strong>Archivos Subidos</strong><br>
+                            <small>{{ app_info.upload_files or 0 }}</small>
+                        </div>
+                        
+                        <div class="info-item">
+                            <strong>Modelos Guardados</strong><br>
+                            <small>{{ app_info.model_files or 0 }}</small>
+                        </div>
+                        
+                        <div class="info-item">
+                            <strong>Modo Debug</strong><br>
+                            <small>{% if app_info.debug_mode %}Activado{% else %}Desactivado{% endif %}</small>
+                        </div>
+                        
+                        {% if app_info.config and app_info.config.max_content_length %}
+                        <div class="info-item">
+                            <strong>Tamaño Máx. Archivo</strong><br>
+                            <small>{{ (app_info.config.max_content_length / 1024**2) | round(0) }} MB</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Info Detallada -->
+    <div class="row">
+        <div class="col-md-12 text-center">
+            <button class="btn btn-warning text-white" onclick="showSystemInfo()">
+                Info Detallada
+            </button>
+        </div>
+    </div>
+    
+    <!-- Timestamp -->
+    <div class="text-center mt-3">
+        <small class="text-muted">
+            Última actualización: <span id="currentTime"></span>
+        </small>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Mostrar timestamp actual
+function updateTimestamp() {
+    const now = new Date();
+    const timestamp = now.getFullYear() + '-' + 
+                     String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                     String(now.getDate()).padStart(2, '0') + ' ' +
+                     String(now.getHours()).padStart(2, '0') + ':' + 
+                     String(now.getMinutes()).padStart(2, '0') + ':' + 
+                     String(now.getSeconds()).padStart(2, '0');
+    
+    const timeElement = document.getElementById('currentTime');
+    if (timeElement) {
+        timeElement.textContent = timestamp;
+    }
+}
+
+// Actualizar timestamp al cargar la página
+document.addEventListener('DOMContentLoaded', updateTimestamp);
+
+function refreshStatus() {
+    location.reload();
+}
+
+function showSystemInfo() {
+    const info = `
+Información Detallada del Sistema:
+
+{% if system_info %}
+Plataforma: {{ system_info.platform or 'No disponible' }}
+Python: {{ system_info.python_version or 'No disponible' }}
+CPU Cores: {{ system_info.cpu_count or 'No disponible' }}
+{% if system_info.memory %}
+RAM Total: {{ (system_info.memory.total / 1024**3) | round(2) }} GB
+RAM Disponible: {{ (system_info.memory.available / 1024**3) | round(2) }} GB
+{% endif %}
+{% endif %}
+
+Información de la App:
+Archivos: {{ app_info.upload_files or 0 }}
+Modelos: {{ app_info.model_files or 0 }}
+Debug: {% if app_info.debug_mode %}Sí{% else %}No{% endif %}
+    `;
+    
+    alert(info);
+}
+
+// Auto-refresh cada 30 segundos
+setTimeout(() => {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}

@@ -1,0 +1,607 @@
+{% extends "base.html" %}
+
+{% block title %}Resultados del Entrenamiento - Regresión{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/model_training_hub.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+/* Estilos personalizados para el scroll de importancia de variables */
+.feature-importance-container {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    background: #f8f9fa;
+    padding: 15px;
+}
+
+/* Personalizar la barra de scroll */
+.feature-importance-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.feature-importance-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.feature-importance-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.feature-importance-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Para Firefox */
+.feature-importance-container {
+    scrollbar-width: thin;
+    scrollbar-color: #c1c1c1 #f1f1f1;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="text-center mb-4">
+                Resultados de Regresión
+            </h1>
+            <p class="text-center text-muted mb-5">
+                Análisis completo del modelo {{ model_info.model_type|title|replace('_', ' ') }}
+            </p>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-12">
+
+            <!-- Información del modelo -->
+            <div class="data-info-card mb-4">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5>Información del Modelo</h5>
+                        <p class="mb-0">
+                            <strong>Modelo:</strong> {{ model_info.model_type|title|replace('_', ' ') }}<br>
+                            <strong>Archivo:</strong> {{ model_info.file_used }}<br>
+                            <strong>Variable Target:</strong> {{ model_info.target_column }} | 
+                            <strong>Features:</strong> {{ model_info.n_features }}
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        
+                    </div>
+                </div>
+            </div>
+
+            <!-- Métricas Principales -->
+            <div class="model-section mb-4">
+                <h2 class="section-title">
+                    Métricas de Rendimiento
+                </h2>
+                <p class="section-description">
+                    Evaluación del rendimiento del modelo de regresión
+                </p>
+                
+                <div class="row">
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="model-card text-center">
+                            <div class="metric-value text-primary" style="font-size: 2rem; font-weight: bold;">{{ "%.4f" | format(main_metrics.test_r2) }}</div>
+                            <div class="metric-label d-flex align-items-center justify-content-center" style="color: #6c757d;" data-bs-toggle="tooltip" 
+                                 data-bs-placement="top" 
+                                 data-bs-html="true"
+                                 title="<strong>R² de Prueba (Coeficiente de Determinación)</strong><br>• Proporción de varianza explicada por el modelo<br>• R² = 1 - (SS_res / SS_tot)<br>• 1.0 = modelo perfecto (explica toda la varianza)<br>• 0.0 = modelo tan bueno como la media<br>• Negativo = modelo peor que usar la media<br>• >0.7 = buen modelo, >0.9 = excelente"
+                                 style="cursor: help;">
+                                R² Prueba
+                            </div>
+                            <small class="text-muted d-block">Coeficiente de Determinación</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="model-card text-center">
+                            <div class="metric-value text-success" style="font-size: 2rem; font-weight: bold;">{{ "%.4f" | format(main_metrics.train_r2) }}</div>
+                            <div class="metric-label d-flex align-items-center justify-content-center" style="color: #6c757d;" data-bs-toggle="tooltip" 
+                                 data-bs-placement="top" 
+                                 data-bs-html="true"
+                                 title="<strong>R² de Entrenamiento</strong><br>• R² calculado en datos de entrenamiento<br>• Si es mucho mayor que R² de prueba, hay overfitting<br>• Ideal: valores similares entre entrenamiento y prueba<br>• Diferencia >0.1 puede indicar sobreajuste"
+                                 style="cursor: help;">
+                                R² Entrenamiento
+                            </div>
+                            <small class="text-muted d-block">Rendimiento en datos de entrenamiento</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="model-card text-center">
+                            <div class="metric-value text-warning" style="font-size: 2rem; font-weight: bold;">{{ "%.4f" | format(main_metrics.test_mse) }}</div>
+                            <div class="metric-label d-flex align-items-center justify-content-center" style="color: #6c757d;" data-bs-toggle="tooltip" 
+                                 data-bs-placement="top" 
+                                 data-bs-html="true"
+                                 title="<strong>MSE (Error Cuadrático Medio)</strong><br>• Promedio de los errores al cuadrado<br>• MSE = Σ(y_real - y_pred)² / n<br>• Penaliza más los errores grandes<br>• Valores menores = mejor modelo<br>• Unidades: (unidad de y)²<br>• Sensible a outliers"
+                                 style="cursor: help;">
+                                MSE Prueba
+                            </div>
+                            <small class="text-muted d-block">Error Cuadrático Medio</small>
+                        </div>
+                    </div>
+                    {% if main_metrics.test_mae is defined %}
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="model-card text-center">
+                            <div class="metric-value text-info" style="font-size: 2rem; font-weight: bold;">{{ "%.4f" | format(main_metrics.test_mae) }}</div>
+                            <div class="metric-label d-flex align-items-center justify-content-center" style="color: #6c757d;" data-bs-toggle="tooltip" 
+                                 data-bs-placement="top" 
+                                 data-bs-html="true"
+                                 title="<strong>MAE (Error Absoluto Medio)</strong><br>• Promedio de los errores absolutos<br>• MAE = Σ|y_real - y_pred| / n<br>• Todas las diferencias tienen el mismo peso<br>• Valores menores = mejor modelo<br>• Mismas unidades que la variable objetivo<br>• Menos sensible a outliers que MSE"
+                                 style="cursor: help;">
+                                MAE Prueba
+                            </div>
+                            <small class="text-muted d-block">Error Absoluto Medio</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                    
+                    <!-- Evaluación del modelo -->
+                    <div class="mt-3">
+                        {% if main_metrics.test_r2 >= 0.8 %}
+                            <div class="alert alert-success">
+                                <strong>Excelente:</strong> El modelo tiene un rendimiento muy bueno (R² ≥ 0.8). 
+                                Explica al menos el 80% de la variabilidad en los datos.
+                            </div>
+                        {% elif main_metrics.test_r2 >= 0.6 %}
+                            <div class="alert alert-warning">
+                                <strong>Bueno:</strong> El modelo tiene un rendimiento aceptable (R² ≥ 0.6). 
+                                Podría beneficiarse de más datos o mejores características.
+                            </div>
+                        {% elif main_metrics.test_r2 >= 0.3 %}
+                            <div class="alert alert-warning">
+                                <strong>Regular:</strong> El modelo tiene un rendimiento limitado (R² ≥ 0.3). 
+                                Considera probar otros algoritmos o revisar las características.
+                            </div>
+                        {% else %}
+                            <div class="alert alert-danger">
+                                <strong>Pobre:</strong> El modelo tiene un rendimiento bajo (R² < 0.3). 
+                                Revisa los datos, características y considera otros enfoques.
+                            </div>
+                        {% endif %}
+                        
+                        {% if main_metrics.train_r2 - main_metrics.test_r2 > 0.1 %}
+                            <div class="alert alert-info mt-2">
+                                <strong>Nota:</strong> Hay una diferencia significativa entre el rendimiento 
+                                en entrenamiento y prueba, lo que podría indicar sobreajuste.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información del Modelo -->
+            <div class="model-section mb-4">
+                <h2 class="section-title">
+                    Detalles del Modelo
+                </h2>
+                <p class="section-description">
+                    Configuración y variables utilizadas en el entrenamiento
+                </p>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="model-card">
+                            <h6 class="text-primary mb-3">Configuración del Modelo</h6>
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-2"><strong class="text-dark">Tipo de Modelo:</strong> <span class="badge bg-primary">{{ model_info.model_type|title|replace('_', ' ') }}</span></li>
+                                <li class="mb-2"><strong class="text-dark">Archivo Usado:</strong> <span class="badge bg-secondary">{{ model_info.file_used }}</span></li>
+                                <li class="mb-2"><strong class="text-dark">Variable Target:</strong> <span class="badge bg-success">{{ model_info.target_column }}</span></li>
+                                <li class="mb-2"><strong class="text-dark">Número de Features:</strong> <span class="badge bg-info">{{ model_info.n_features }}</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="model-card">
+                            <h6 class="text-success mb-3">Variables Predictoras</h6>
+                            <div class="features-container" style="max-height: 150px; overflow-y: auto;">
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for feature in model_info.feature_columns %}
+                                    <span class="badge bg-dark text-light">{{ feature }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <!-- Fórmula del Modelo (solo para modelos lineales) -->
+            {% set linear_models = ['linear_regression', 'ridge_regression', 'lasso_regression', 'elastic_net'] %}
+            {% if model_info.model_type in linear_models %}
+            <div class="model-section mb-4">
+                <h2 class="section-title">
+                    Fórmula del Modelo
+                </h2>
+                <p class="section-description">
+                    Ecuación matemática generada por el modelo para hacer predicciones
+                </p>
+                
+                <div class="model-card mb-4">
+                    <!-- Fórmula principal -->
+                    <div class="bg-light rounded p-4 mb-4" style="font-family: 'Courier New', monospace;">
+                        <div class="text-center">
+                            <h5 class="mb-3 text-dark">
+                                <strong>{{ model_info.target_column }}</strong> = 
+                                {% if preparation_info.get('intercept') is defined %}
+                                    {{ "%.4f" | format(preparation_info.intercept) }}
+                                {% else %}
+                                    <span class="text-muted">intercept</span>
+                                {% endif %}
+                            </h5>
+                            
+                            {% if preparation_info.get('coef_') %}
+                                {% for feature in model_info.feature_columns %}
+                                    <div class="mb-2 text-dark">
+                                        {% set coef = preparation_info.coef_[loop.index0] %}
+                                        {% if coef >= 0 and loop.index0 > 0 %} + {% elif coef < 0 %} - {% endif %}
+                                        <strong>{{ "%.4f" | format(coef|abs) }}</strong> × <em>{{ feature }}</em>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Interpretación de coeficientes -->
+                    {% if preparation_info.get('coef_') %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="model-card">
+                                <h6 class="text-primary mb-3">Coeficientes</h6>
+                                <div style="max-height: 200px; overflow-y: auto;">
+                                    {% for feature in model_info.feature_columns %}
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="text-dark"><strong>{{ feature }}:</strong></span>
+                                        <span class="badge {% if preparation_info.coef_[loop.index0] >= 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ "%.4f" | format(preparation_info.coef_[loop.index0]) }}
+                                        </span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="model-card">
+                                <h6 class="text-warning mb-3">Interpretación</h6>
+                                <ul class="list-unstyled mb-0">
+                                    {% if preparation_info.get('intercept') is defined %}
+                                    <li class="mb-2"><strong class="text-dark">Intercepto:</strong> <span class="text-primary">{{ "%.4f" | format(preparation_info.intercept) }}</span></li>
+                                    {% endif %}
+                                    <li class="mb-2"><strong class="text-dark">Coeficientes positivos:</strong> <span class="text-success">Aumentan el valor predicho</span></li>
+                                    <li class="mb-2"><strong class="text-dark">Coeficientes negativos:</strong> <span class="text-danger">Disminuyen el valor predicho</span></li>
+                                    <li><strong class="text-dark">Magnitud:</strong> <span class="text-info">Indica la importancia del efecto</span></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Información de preparación -->
+            {% if preparation_info %}
+            <div class="model-section mb-4">
+                <h2 class="section-title">
+                    Información de Preparación de Datos
+                </h2>
+                <p class="section-description">
+                    Detalles sobre el procesamiento y preparación de los datos
+                </p>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="model-card">
+                            <h6 class="text-success mb-3">Configuración del Modelo</h6>
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-2"><strong class="text-dark">Número de características:</strong> <span class="badge bg-info">{{ preparation_info.features_count }}</span></li>
+                                {% if preparation_info.target_type %}
+                                <li class="mb-2"><strong class="text-dark">Tipo de target:</strong> <span class="badge bg-dark">{{ preparation_info.target_type }}</span></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Gráfico de Distribución del Target -->
+            {% if preparation_info and preparation_info.target_distribution %}
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="info-card">
+                        <h6>Distribución de la Variable Target: {{ model_info.target_column }}</h6>
+                        <div class="chart-container" style="position: relative; height: 400px; margin-top: 20px;">
+                            <canvas id="targetDistributionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endif %}
+
+            <!-- Botones de acción -->
+            <div class="text-center mt-5 mb-5">
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <a href="{{ url_for('training.sklearn_regression') }}" class="btn btn-warning btn-lg px-4 text-white">
+                        Entrenar Otro Modelo
+                    </a>
+                    <a href="{{ url_for('training.training') }}" class="btn btn-primary btn-lg px-4">
+                        Hub de Entrenamiento
+                    </a>
+                    <button class="btn btn-success btn-lg px-4" data-bs-toggle="modal" data-bs-target="#saveModelModal">
+                        Guardar Modelo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para guardar modelo -->
+    <div class="modal fade" id="saveModelModal" tabindex="-1" aria-labelledby="saveModelModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="saveModelModalLabel">
+                        Guardar Modelo de Regresión
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST" action="{{ url_for('training.save_model') }}">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="model_name" class="form-label">Nombre del Modelo</label>
+                            <input type="text" class="form-control" id="model_name" name="model_name" 
+                                   placeholder="Ejemplo: mi_regresor_linear" 
+                                   value="{{ model_info.model_type }}_regresion">
+                            <div class="form-text">
+                                Deja en blanco para generar un nombre automático con timestamp
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle"></i> Información del Modelo</h6>
+                            <ul class="mb-0">
+                                <li><strong>Tipo:</strong> {{ model_info.model_type|title|replace('_', ' ') }}</li>
+                                <li><strong>Variable Target:</strong> {{ model_info.target_column }}</li>
+                                <li><strong>Características:</strong> {{ model_info.n_features }}</li>
+                                <li><strong>R² de Test:</strong> {{ "%.3f"|format(main_metrics.test_r2) }}</li>
+                                <li><strong>MSE de Test:</strong> {{ "%.3f"|format(main_metrics.test_mse) }}</li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Campos ocultos -->
+                        <input type="hidden" name="model_type" value="{{ model_info.model_type }}">
+                        <input type="hidden" name="task_type" value="regression">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">
+                            Guardar Modelo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Inicializar tooltips de Bootstrap
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            html: true,
+            delay: { "show": 300, "hide": 100 }
+        });
+    });
+    
+    // Generar gráfico de distribución del target (histograma para regresión)
+    {% if preparation_info and preparation_info.target_distribution %}
+    const targetDistribution = {{ preparation_info.target_distribution | tojson }};
+    const targetPercentages = {{ preparation_info.target_distribution_percentages | tojson }};
+    
+    if (Object.keys(targetDistribution).length > 0) {
+        const ctx = document.getElementById('targetDistributionChart').getContext('2d');
+        
+        const labels = Object.keys(targetDistribution);
+        const counts = Object.values(targetDistribution);
+        const percentages = Object.values(targetPercentages);
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Frecuencia',
+                    data: counts,
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Distribución de la Variable Target (Histograma)',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        color: '#333'
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const percentage = percentages[context.dataIndex];
+                                return `${context.parsed.y} valores (${percentage}%)`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        },
+                        title: {
+                            display: true,
+                            text: 'Frecuencia'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Rangos de valores'
+                        }
+                    }
+                },
+                animation: {
+                    duration: 2000,
+                    easing: 'easeInOutQuart'
+                }
+            }
+        });
+    }
+    {% endif %}
+    
+    // Generar gráfico interactivo de feature importance
+    {% if feature_importance %}
+    const featureImportance = {{ feature_importance | tojson }};
+    
+    if (Object.keys(featureImportance).length > 0) {
+        // Crear canvas para feature importance si no existe
+        let importanceCanvas = document.getElementById('featureImportanceChart');
+        if (!importanceCanvas) {
+            // Buscar donde insertar el gráfico
+            const importanceSection = document.querySelector('.model-section');
+            if (importanceSection) {
+                const chartDiv = document.createElement('div');
+                chartDiv.innerHTML = `
+                    <div class="info-card mt-4">
+                        <h6>Importancia de Variables</h6>
+                        <div class="chart-container" style="position: relative; height: 500px; margin-top: 20px;">
+                            <canvas id="featureImportanceChart"></canvas>
+                        </div>
+                    </div>
+                `;
+                importanceSection.appendChild(chartDiv);
+                importanceCanvas = document.getElementById('featureImportanceChart');
+            }
+        }
+        
+        if (importanceCanvas) {
+            const ctx = importanceCanvas.getContext('2d');
+            
+            // Ordenar features por importancia
+            const sortedFeatures = Object.entries(featureImportance)
+                .sort(([,a], [,b]) => Math.abs(b) - Math.abs(a))
+                .slice(0, 20); // Máximo 20 features
+            
+            const labels = sortedFeatures.map(([name]) => name);
+            const values = sortedFeatures.map(([, value]) => Math.abs(value));
+            const originalValues = sortedFeatures.map(([, value]) => value);
+            
+            // Colores basados en si es positivo o negativo
+            const colors = originalValues.map(value => 
+                value >= 0 
+                    ? 'rgba(40, 167, 69, 0.8)'   // Verde para positivo
+                    : 'rgba(220, 53, 69, 0.8)'   // Rojo para negativo
+            );
+            
+            const borderColors = originalValues.map(value => 
+                value >= 0 ? '#28a745' : '#dc3545'
+            );
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Importancia',
+                        data: values,
+                        backgroundColor: colors,
+                        borderColor: borderColors,
+                        borderWidth: 2,
+                        borderRadius: 6,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // Barras horizontales
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Importancia de Variables del Modelo',
+                            font: { size: 16, weight: 'bold' },
+                            color: '#333'
+                        },
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    return `Variable: ${context[0].label}`;
+                                },
+                                label: function(context) {
+                                    const originalValue = originalValues[context.dataIndex];
+                                    const impact = originalValue >= 0 ? 'Impacto Positivo' : 'Impacto Negativo';
+                                    return [
+                                        `Importancia: ${originalValue.toFixed(6)}`,
+                                        `${impact}`,
+                                        originalValue >= 0 
+                                            ? 'Aumenta el valor predicho'
+                                            : 'Disminuye el valor predicho'
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Magnitud de Importancia'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Variables'
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+        }
+    }
+    {% endif %}
+});
+</script>
+{% endblock %}

@@ -1,0 +1,506 @@
+{% extends "base.html" %}
+
+{% block title %}Agregar Registros al Dataset{% endblock %}
+
+{% block styles %}
+<style>
+    .add-records-header {
+        background: linear-gradient(135deg, #6f42c1, #8e44ad);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .model-info-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+        border-left: 4px solid #6f42c1;
+    }
+    
+    .form-section {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .input-group-text {
+        background-color: #6f42c1;
+        color: white;
+        border-color: #6f42c1;
+    }
+    
+    .form-control:focus {
+        border-color: #6f42c1;
+        box-shadow: 0 0 0 0.2rem rgba(111, 66, 193, 0.25);
+    }
+    
+    .btn-primary {
+        background-color: #6f42c1;
+        border-color: #6f42c1;
+    }
+    
+    .btn-primary:hover {
+        background-color: #5a359c;
+        border-color: #5a359c;
+    }
+    
+    .record-preview {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .records-table {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .btn-remove-record {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+    
+    .retrain-section {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        text-align: center;
+        margin-top: 2rem;
+    }
+    
+    .retrain-warning {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+        padding: 1rem;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+    }
+    
+    .badge {
+        font-size: 0.7rem;
+    }
+    
+    .table-responsive {
+        border-radius: 0.375rem;
+        overflow-x: auto;
+        overflow-y: hidden;
+        max-width: 100%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .table th {
+        font-weight: 600;
+        white-space: nowrap;
+        min-width: 120px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .table td {
+        vertical-align: middle;
+        white-space: nowrap;
+        min-width: 120px;
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(111, 66, 193, 0.1);
+    }
+    
+    /* Scrollbar personalizado para la tabla */
+    .table-responsive::-webkit-scrollbar {
+        height: 8px;
+    }
+    
+    .table-responsive::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+    
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: #6f42c1;
+        border-radius: 4px;
+    }
+    
+    .table-responsive::-webkit-scrollbar-thumb:hover {
+        background: #5a359c;
+    }
+    
+    .table-container {
+        position: relative;
+    }
+    .table-container {
+        position: relative;
+        padding: 0.3rem 0.6rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .input-group-text {
+        min-width: 80px;
+        justify-content: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="add-records-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2>Agregar Registros al Dataset</h2>
+                <p class="mb-0">Agrega nuevos datos y reentrena el modelo para mejorar su precisión</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <!-- Ícono removido -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Información del Modelo -->
+    <div class="model-info-card">
+        <h5>Información del Modelo</h5>
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Nombre:</strong> {{ model_info.model_name }}</p>
+                <p><strong>Tipo:</strong> {{ model_info.model_type }}</p>
+                <p><strong>Tarea:</strong> {{ model_info.task_type|title }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Variable Target:</strong> {{ model_info.target_column }}</p>
+                <p><strong>Características:</strong> {{ model_info.feature_columns|length }}</p>
+                <p><strong>Dataset Original:</strong> {{ model_info.file_used }}</p>
+            </div>
+        </div>
+        
+        {% if model_info.metrics %}
+        <div class="mt-3">
+            <h6>Métricas Actuales:</h6>
+            <div class="row">
+                {% if model_info.task_type == 'classification' %}
+                <div class="col-md-3">
+                    <small class="text-muted">Precisión</small><br>
+                    <strong>{{ "%.3f"|format(model_info.metrics.test_accuracy or 0) }}</strong>
+                </div>
+                <div class="col-md-3">
+                    <small class="text-muted">F1 Score</small><br>
+                    <strong>{{ "%.3f"|format(model_info.metrics.test_f1_macro or 0) }}</strong>
+                </div>
+                {% elif model_info.task_type == 'regression' %}
+                <div class="col-md-3">
+                    <small class="text-muted">R²</small><br>
+                    <strong>{{ "%.3f"|format(model_info.metrics.test_r2 or 0) }}</strong>
+                </div>
+                <div class="col-md-3">
+                    <small class="text-muted">MAE</small><br>
+                    <strong>{{ "%.3f"|format(model_info.metrics.test_mae or 0) }}</strong>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Vista Previa del Dataset -->
+    {% if model_info.sample_data %}
+    <div class="form-section">
+        <h5>Vista Previa del Dataset Original</h5>
+        
+        {% if model_info.sample_data.error %}
+        <div class="alert alert-warning">
+            <h6>No se pudo cargar la vista previa</h6>
+            <p class="mb-2">{{ model_info.sample_data.message }}</p>
+            {% if model_info.sample_data.suggestions %}
+            <p class="mb-2"><strong>Sugerencia:</strong> {{ model_info.sample_data.suggestions }}</p>
+            {% endif %}
+            {% if model_info.sample_data.files_tried %}
+            <small class="text-muted">
+                <strong>Archivos intentados:</strong> {{ model_info.sample_data.files_tried|join(', ') }}
+            </small>
+            {% endif %}
+        </div>
+        {% else %}
+        <p class="text-muted">Primeras 5 filas del dataset para referencia</p>
+        
+        <div class="table-container">
+            <div class="table-responsive" id="dataTable">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            {% for column in model_info.sample_data.columns %}
+                            <th title="{{ column }}">
+                                <div>{{ column }}</div>
+                                {% if model_info.column_types and model_info.column_types.get(column) %}
+                                <small class="badge bg-light text-dark">{{ model_info.column_types[column] }}</small>
+                                {% endif %}
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in model_info.sample_data.rows %}
+                        <tr>
+                            {% for value in row %}
+                            <td title="{{ value }}">{{ value }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Formulario para Agregar Registros -->
+    <div class="form-section">
+        <h5>Agregar Nuevo Registro</h5>
+        <p class="text-muted">Completa los valores para cada característica del modelo</p>
+        
+        <form id="addRecordForm">
+            <div class="row">
+                <!-- Variable Target -->
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">
+                        <strong>{{ model_info.target_column }}</strong> (Variable Target)
+                        {% if model_info.column_types and model_info.column_types.get(model_info.target_column) %}
+                        <span class="badge bg-info ms-2">{{ model_info.column_types[model_info.target_column] }}</span>
+                        {% endif %}
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">Objetivo</span>
+                        <input type="text" class="form-control" id="target_value" name="target_value" 
+                               placeholder="Valor objetivo" required>
+                    </div>
+                    <small class="text-muted">
+                        {% if model_info.task_type == 'regression' %}
+                        Para regresión, usa valores numéricos: 1.5, 25, 100, etc.
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+            
+            <!-- Características -->
+            <div class="row">
+                {% for feature in model_info.feature_columns %}
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">
+                        {{ feature }}
+                        {% if model_info.column_types and model_info.column_types.get(feature) %}
+                        <span class="badge bg-secondary ms-2">{{ model_info.column_types[feature] }}</span>
+                        {% endif %}
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">Valor</span>
+                        <input type="text" class="form-control" name="{{ feature }}" 
+                               placeholder="Valor para {{ feature }}" required>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="text-end">
+                <button type="button" class="btn btn-primary" onclick="addRecord()">
+                    Agregar Registro
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Registros Agregados -->
+    <div class="form-section">
+        <h5>Registros Agregados</h5>
+        <div id="recordsCount" class="mb-3">
+            <span class="badge bg-info">0 registros agregados</span>
+        </div>
+        
+        <div class="records-table">
+            <table class="table table-sm table-hover" id="recordsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>{{ model_info.target_column }}</th>
+                        {% for feature in model_info.feature_columns %}
+                        <th>{{ feature }}</th>
+                        {% endfor %}
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="recordsBody">
+                    <!-- Los registros se agregan dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="noRecordsMessage" class="text-center text-muted py-4">
+            <p>No hay registros agregados aún</p>
+        </div>
+    </div>
+    
+    <!-- Sección de Reentrenamiento -->
+    <div id="retrainSection" class="retrain-section" style="display: none;">
+        <h4>Reentrenar Modelo</h4>
+        <p class="mb-4">
+            Cuando agregues nuevos registros, podrás reentrenar el modelo para incorporar 
+            los nuevos datos y potencialmente mejorar su rendimiento.
+        </p>
+        
+        <div class="retrain-warning">
+            <strong>Importante:</strong> El reentrenamiento creará una nueva versión del modelo. 
+            El modelo original se mantendrá como respaldo.
+        </div>
+        
+        <form method="POST" action="{{ url_for('training.retrain_model_with_records', model_name=model_info.model_name) }}">
+            <input type="hidden" id="newRecordsData" name="new_records_data" value="">
+            
+            <div class="mb-3">
+                <label class="form-label text-start d-block">Nombre para la nueva versión:</label>
+                <input type="text" class="form-control mx-auto" name="new_model_name" 
+                       placeholder="{{ model_info.model_name }}_v2" style="max-width: 300px;">
+            </div>
+            
+            <button type="submit" class="btn btn-light btn-lg" id="retrainBtn" disabled>
+                Reentrenar Modelo con Nuevos Datos
+            </button>
+        </form>
+    </div>
+    
+    <!-- Botones de Navegación -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <a href="{{ url_for('prediction.saved_models') }}" class="btn btn-outline-secondary">
+                Volver a Modelos
+            </a>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="{{ url_for('prediction.predict_with_model', model_name=model_info.model_name) }}" class="btn btn-outline-info">
+                Hacer Predicciones
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let newRecords = [];
+
+function addRecord() {
+    const form = document.getElementById('addRecordForm');
+    const formData = new FormData(form);
+    
+    // Validar que todos los campos estén llenos
+    let allValid = true;
+    const inputs = form.querySelectorAll('input[required]');
+    inputs.forEach(input => {
+        if (!input.value.trim()) {
+            allValid = false;
+            input.classList.add('is-invalid');
+        } else {
+            input.classList.remove('is-invalid');
+        }
+    });
+    
+    if (!allValid) {
+        alert('Por favor, completa todos los campos requeridos.');
+        return;
+    }
+    
+    // Crear objeto con los datos del registro
+    const record = {};
+    for (let [key, value] of formData.entries()) {
+        record[key] = value.trim();
+    }
+    
+    // Agregar a la lista
+    newRecords.push(record);
+    
+    // Actualizar la tabla
+    updateRecordsTable();
+    
+    // Limpiar formulario
+    form.reset();
+    
+    // Mostrar sección de reentrenamiento si hay registros
+    if (newRecords.length > 0) {
+        document.getElementById('retrainSection').style.display = 'block';
+        document.getElementById('retrainBtn').disabled = false;
+    }
+}
+
+function removeRecord(index) {
+    newRecords.splice(index, 1);
+    updateRecordsTable();
+    
+    if (newRecords.length === 0) {
+        document.getElementById('retrainSection').style.display = 'none';
+        document.getElementById('retrainBtn').disabled = true;
+    }
+}
+
+function updateRecordsTable() {
+    const tbody = document.getElementById('recordsBody');
+    const countElement = document.getElementById('recordsCount');
+    const noRecordsMessage = document.getElementById('noRecordsMessage');
+    
+    // Actualizar contador
+    countElement.innerHTML = `<span class="badge bg-info">${newRecords.length} registros agregados</span>`;
+    
+    // Mostrar/ocultar mensaje de sin registros
+    if (newRecords.length === 0) {
+        noRecordsMessage.style.display = 'block';
+        tbody.innerHTML = '';
+    } else {
+        noRecordsMessage.style.display = 'none';
+        
+        // Generar filas de la tabla
+        tbody.innerHTML = newRecords.map((record, index) => {
+            const targetValue = record.target_value || '';
+            const features = {{ model_info.feature_columns|tojson }};
+            const featureCells = features.map(feature => 
+                `<td>${record[feature] || ''}</td>`
+            ).join('');
+            
+            return `
+                <tr>
+                    <td><strong>${targetValue}</strong></td>
+                    ${featureCells}
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-record" 
+                                onclick="removeRecord(${index})">
+                            Eliminar
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+    
+    // Actualizar el campo hidden con los datos JSON
+    document.getElementById('newRecordsData').value = JSON.stringify(newRecords);
+}
+
+// Inicializar la página
+document.addEventListener('DOMContentLoaded', function() {
+    updateRecordsTable();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Acceso Prohibido - Error 403{% endblock %}
+
+{% block styles %}
+<style>
+.error-container {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.error-code {
+    font-size: 8rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.error-message {
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+}
+
+.error-details {
+    font-size: 1.1rem;
+    margin-bottom: 3rem;
+    opacity: 0.8;
+}
+
+.btn-home {
+    background: rgba(255,255,255,0.2);
+    border: 2px solid white;
+    color: white;
+    padding: 12px 30px;
+    border-radius: 25px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    margin: 0.5rem;
+}
+
+.btn-home:hover {
+    background: white;
+    color: #f5576c;
+    transform: translateY(-2px);
+}
+
+.error-icon {
+    font-size: 4rem;
+    margin-bottom: 2rem;
+    opacity: 0.7;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-icon">
+        <i class="fas fa-lock"></i>
+    </div>
+    <div class="error-code">403</div>
+    <div class="error-message">Acceso Prohibido</div>
+    <div class="error-details">
+        No tienes permisos para acceder a este recurso.
+    </div>
+    
+    <div class="mt-4">
+        <a href="{{ url_for('main.index') }}" class="btn-home">
+            <i class="fas fa-home me-2"></i>Ir al Inicio
+        </a>
+        <a href="javascript:history.back()" class="btn-home">
+            <i class="fas fa-arrow-left me-2"></i>Volver Atrás
+        </a>
+    </div>
+    
+    <div class="mt-4">
+        <small class="opacity-75">
+            Si necesitas acceso, contacta al administrador del sistema.
+        </small>
+    </div>
+</div>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Información de Seguridad</h5>
+                    <p class="text-muted mt-3">
+                        Este acceso está restringido por medidas de seguridad. 
+                        Todos los intentos de acceso se registran automáticamente.
+                    </p>
+                    <div class="mt-4">
+                        <i class="fas fa-shield-alt fa-3x text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

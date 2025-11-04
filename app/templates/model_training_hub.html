@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Entrenamiento de Modelos{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/model_training_hub.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="text-center mb-4">
+                Entrenamiento de Modelos
+            </h1>
+            <p class="text-center text-muted mb-5">
+                Selecciona el tipo de modelo y motor de entrenamiento que deseas utilizar
+            </p>
+        </div>
+    </div>
+
+    <!-- Verificar que hay datos cargados -->
+    {% if not session.get('data_file') %}
+    <div class="alert alert-warning text-center">
+        <h4>No hay datos cargados</h4>
+        <p>Primero debes cargar y procesar un archivo CSV.</p>
+        <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+            Cargar Datos
+        </a>
+    </div>
+    {% else %}
+    
+    <!-- Información de datos cargados -->
+    <div class="data-info-card mb-4" data-filename="{{ filename or 'N/A' }}" 
+         data-rows="{{ data_shape[0] if data_shape else 0 }}" 
+         data-columns="{{ data_shape[1] if data_shape else 0 }}">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h5>Datos Cargados</h5>
+                <p class="mb-0">
+                    <strong>Archivo:</strong> {{ filename or 'N/A' }}<br>
+                    <strong>Filas:</strong> {{ data_shape[0] if data_shape else 0 }} | 
+                    <strong>Columnas:</strong> {{ data_shape[1] if data_shape else 0 }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección: Modelos Predictivos -->
+    <div class="model-section mb-5">
+        <h2 class="section-title">
+            Modelos Predictivos
+        </h2>
+        
+        <div class="row">
+            <!-- Clasificación -->
+            <div class="col-lg-6 mb-4">
+                <div class="model-card h-100">
+                    <div class="model-header">
+                        <h4>Clasificación</h4>
+                    </div>
+                    
+                    <div class="model-engines">
+                        <h6>Motores Disponibles:</h6>
+                        
+                        <!-- Scikit-learn -->
+                        <div class="engine-option" data-engine="sklearn">
+                            <div class="engine-header">
+                                <div>
+                                    <strong>scikit-learn</strong>
+                                </div>
+                            </div>
+                            <div class="algorithms">
+                                <span class="algorithm-tag">Árbol de Decisión</span>
+                                <span class="algorithm-tag">Random Forest</span>
+                                <span class="algorithm-tag">Regresión Logística</span>
+                                <span class="algorithm-tag">SVM</span>
+                                <span class="algorithm-tag">Naive Bayes</span>
+                                <span class="algorithm-tag">KNN</span>
+                            </div>
+                            <a href="{{ url_for('training.sklearn_classification') }}" 
+                               class="btn btn-primary btn-sm mt-2">
+                                Entrenar con scikit-learn
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Regresión -->
+            <div class="col-lg-6 mb-4">
+                <div class="model-card h-100">
+                    <div class="model-header">
+                        <h4>Regresión</h4>
+                    </div>
+                    
+                    <div class="model-engines">
+                        <h6>Motores Disponibles:</h6>
+                        
+                        <!-- Scikit-learn -->
+                        <div class="engine-option" data-engine="sklearn">
+                            <div class="engine-header">
+                                <div>
+                                    <strong>scikit-learn</strong>
+                                </div>
+                            </div>
+                            <div class="algorithms">
+                                <span class="algorithm-tag">Regresión Lineal</span>
+                                <span class="algorithm-tag">Ridge</span>
+                                <span class="algorithm-tag">Lasso</span>
+                                <span class="algorithm-tag">ElasticNet</span>
+                                <span class="algorithm-tag">Árbol de Decisión</span>
+                                <span class="algorithm-tag">Random Forest</span>
+                                <span class="algorithm-tag">SVR</span>
+                                <span class="algorithm-tag">KNN</span>
+                            </div>
+                            <a href="{{ url_for('training.sklearn_regression') }}" 
+                               class="btn btn-success btn-sm mt-2">
+                                Entrenar con scikit-learn
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección: Modelos Asociativos -->
+    <div class="model-section mb-5">
+        <h2 class="section-title">
+            Modelos Asociativos
+        </h2>
+        <p class="section-description">
+            Descubre patrones de asociación y reglas entre elementos
+        </p>
+        
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="model-card">
+                    <div class="model-header">
+                        <h4>Reglas de Asociación</h4>
+                        <p>Encuentra patrones como "Si A entonces B" en tus datos</p>
+                    </div>
+                    
+                    <div class="model-engines">
+                        <h6>Motores Disponibles:</h6>
+                        
+                        <!-- mlxtend -->
+                        <div class="engine-option" data-engine="mlxtend">
+                            <div class="engine-header">
+                                <div>
+                                    <strong>mlxtend</strong>
+                                </div>
+                            </div>
+                            <div class="algorithms">
+                                <span class="algorithm-tag">Apriori</span>
+                                <span class="algorithm-tag">FP-Growth</span>
+                            </div>
+                            <a href="{{ url_for('association.association_rules_page') }}" 
+                               class="btn btn-warning btn-sm mt-2 text-white">
+                                Entrenar con mlxtend
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/model_training_hub.js') }}"></script>
+{% endblock %}

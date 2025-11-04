@@ -1,0 +1,65 @@
+/* Estilos para la tabla de vista previa */
+#previewSection {
+    transition: all 0.3s ease;
+}
+
+#previewTable {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: #212529;
+}
+
+#previewTable th {
+    vertical-align: bottom;
+    border-bottom: 2px solid #dee2e6;
+}
+
+#previewTable td, #previewTable th {
+    padding: 0.75rem;
+    border: 1px solid #dee2e6;
+}
+
+/* Mejorar el input de archivo */
+.form-control-file {
+    display: block;
+    width: 100%;
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+/* Barra de Estado del Archivo */
+.file-status-bar {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.75rem 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.file-status-bar .file-info {
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.file-status-bar .file-info strong {
+    color: #007bff;
+    font-weight: 600;
+}
+
+.file-status-bar .file-actions .btn {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+}
+
+.file-status-bar .file-actions .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}

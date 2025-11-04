@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Error Interno del Servidor - Error 500{% endblock %}
+
+{% block styles %}
+<style>
+.error-container {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.error-code {
+    font-size: 8rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.error-message {
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+}
+
+.error-details {
+    font-size: 1.1rem;
+    margin-bottom: 3rem;
+    opacity: 0.8;
+}
+
+.btn-home {
+    background: rgba(255,255,255,0.2);
+    border: 2px solid white;
+    color: white;
+    padding: 12px 30px;
+    border-radius: 25px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    margin: 0.5rem;
+}
+
+.btn-home:hover {
+    background: white;
+    color: #ee5a24;
+    transform: translateY(-2px);
+}
+
+.error-icon {
+    font-size: 4rem;
+    margin-bottom: 2rem;
+    opacity: 0.7;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-icon">
+        <i class="fas fa-exclamation-triangle"></i>
+    </div>
+    <div class="error-code">500</div>
+    <div class="error-message">Error Interno del Servidor</div>
+    <div class="error-details">
+        Algo salió mal en nuestros servidores. Ya hemos sido notificados del problema.
+    </div>
+    
+    <div class="mt-4">
+        <a href="{{ url_for('main.index') }}" class="btn-home">
+            <i class="fas fa-home me-2"></i>Ir al Inicio
+        </a>
+        <a href="javascript:location.reload()" class="btn-home">
+            <i class="fas fa-redo me-2"></i>Intentar de Nuevo
+        </a>
+    </div>
+    
+    <div class="mt-4">
+        <small class="opacity-75">
+            El error ha sido registrado automáticamente. Intenta nuevamente en unos minutos.
+        </small>
+    </div>
+</div>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title text-center">¿Qué puedes hacer mientras tanto?</h5>
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="text-center mb-3">
+                                <i class="fas fa-history fa-2x text-info mb-2"></i>
+                                <h6>Verificar tu Sesión</h6>
+                                <p class="small text-muted">
+                                    Puede que tu sesión haya expirado. Intenta subir tu archivo nuevamente.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-center mb-3">
+                                <i class="fas fa-file-alt fa-2x text-success mb-2"></i>
+                                <h6>Verificar tu Archivo</h6>
+                                <p class="small text-muted">
+                                    Asegúrate de que tu archivo CSV esté bien formateado y no sea demasiado grande.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mt-4" role="alert">
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <strong>Información Técnica:</strong><br>
+                                <small>
+                                    Timestamp: <span id="errorTimestamp"></span><br>
+                                    Si el problema persiste, incluye esta información al reportar el error.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Mostrar timestamp del error
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    const timestamp = now.getFullYear() + '-' + 
+                     String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                     String(now.getDate()).padStart(2, '0') + ' ' +
+                     String(now.getHours()).padStart(2, '0') + ':' + 
+                     String(now.getMinutes()).padStart(2, '0') + ':' + 
+                     String(now.getSeconds()).padStart(2, '0');
+    
+    const timeElement = document.getElementById('errorTimestamp');
+    if (timeElement) {
+        timeElement.textContent = timestamp;
+    }
+});
+</script>
+{% endblock %}

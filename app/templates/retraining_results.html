@@ -1,0 +1,571 @@
+{% extends "base.html" %}
+
+{% block title %}Resultados del Reentrenamiento{% endblock %}
+
+{% block styles %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .retrain-header {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .comparison-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .metric-comparison {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .metric-name {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .metric-values {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+    
+    .metric-old {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .metric-new {
+        color: #28a745;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+    
+    .metric-arrow {
+        color: #495057;
+    }
+    
+    .improvement-positive {
+        color: #28a745;
+    }
+    
+    .improvement-negative {
+        color: #dc3545;
+    }
+    
+    .improvement-neutral {
+        color: #6c757d;
+    }
+    
+    .improvement-minimal {
+        color: #fd7e14;
+        font-style: italic;
+    }
+    
+    .records-info {
+        background: #e3f2fd;
+        border-left: 4px solid #2196f3;
+        padding: 1rem;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+    }
+    
+    .action-buttons {
+        text-align: center;
+        margin-top: 2rem;
+    }
+    
+    .action-buttons .btn {
+        margin: 0 0.5rem;
+    }
+    
+    .training-details {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1.5rem;
+    }
+    
+    .new-records-preview {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="retrain-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2>Reentrenamiento Completado</h2>
+                <p class="mb-0">El modelo ha sido reentrenado exitosamente con los nuevos datos</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="badge bg-success fs-6 px-3 py-2">
+                    Exitoso
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Información de Registros Agregados -->
+    <div class="records-info">
+        <h6>Datos Agregados</h6>
+        <p class="mb-2">
+            Se agregaron <strong>{{ retraining_info.new_records_count }}</strong> nuevos registros al dataset original.
+            El dataset ahora tiene <strong>{{ retraining_info.total_records }}</strong> registros en total.
+        </p>
+        <small class="text-muted">
+            Dataset original: {{ retraining_info.original_records }} registros → 
+            Nuevo dataset: {{ retraining_info.total_records }} registros 
+            (+{{ retraining_info.new_records_count }})
+        </small>
+    </div>
+    
+    <!-- Comparación de Modelos -->
+    <div class="comparison-card">
+        <h5>Comparación de Rendimiento</h5>
+        <p class="text-muted">Comparación entre el modelo original y el modelo reentrenado</p>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Modelo Original</h6>
+                <p class="text-muted">{{ original_model.model_name }}</p>
+            </div>
+            <div class="col-md-6">
+                <h6>Modelo Reentrenado</h6>
+                <p class="text-success">{{ new_model.model_name }}</p>
+            </div>
+        </div>
+        
+        <!-- Métricas de Comparación -->
+        {% if original_model.task_type == 'classification' %}
+        <div class="metrics-comparison mt-3">
+            {% set metrics = [
+                ('Precisión (Accuracy)', 'test_accuracy'),
+                ('Precisión Macro', 'test_precision_macro'),
+                ('Recall Macro', 'test_recall_macro'),
+                ('F1 Score Macro', 'test_f1_macro')
+            ] %}
+            
+            {% for metric_name, metric_key in metrics %}
+            <div class="metric-comparison">
+                <div class="metric-name">{{ metric_name }}</div>
+                <div class="metric-values">
+                    <div class="metric-old">
+                        {{ "%.3f"|format(original_model.metrics.get(metric_key, 0) or 0) }}
+                    </div>
+                    <div class="metric-arrow">→</div>
+                    <div class="metric-new">
+                        {{ "%.3f"|format(new_model.metrics.get(metric_key, 0) or 0) }}
+                    </div>
+                    <div class="improvement-indicator">
+                        {% set old_val = original_model.metrics.get(metric_key, 0) or 0 %}
+                        {% set new_val = new_model.metrics.get(metric_key, 0) or 0 %}
+                        {% set improvement = new_val - old_val %}
+                        {% if improvement > 0.0001 %}
+                        <span class="improvement-positive">
+                            ↑ +{{ "%.4f"|format(improvement) }}
+                        </span>
+                        {% elif improvement < -0.0001 %}
+                        <span class="improvement-negative">
+                            ↓ {{ "%.4f"|format(improvement) }}
+                        </span>
+                        {% elif improvement == 0 %}
+                        <span class="improvement-neutral">
+                            - Idéntico
+                        </span>
+                        {% else %}
+                        <span class="improvement-minimal">
+                            ~ {{ "%.4f"|format(improvement) }} (mínimo)
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        {% elif original_model.task_type == 'regression' %}
+        <div class="metrics-comparison mt-3">
+            {% set metrics = [
+                ('R² Score', 'test_r2'),
+                ('Error Cuadrático Medio (MSE)', 'test_mse'),
+                ('Error Absoluto Medio (MAE)', 'test_mae')
+            ] %}
+            
+            {% for metric_name, metric_key in metrics %}
+            <div class="metric-comparison">
+                <div class="metric-name">{{ metric_name }}</div>
+                <div class="metric-values">
+                    <div class="metric-old">
+                        {{ "%.3f"|format(original_model.metrics.get(metric_key, 0) or 0) }}
+                    </div>
+                    <div class="metric-arrow">→</div>
+                    <div class="metric-new">
+                        {{ "%.3f"|format(new_model.metrics.get(metric_key, 0) or 0) }}
+                    </div>
+                    <div class="improvement-indicator">
+                        {% set old_val = original_model.metrics.get(metric_key, 0) or 0 %}
+                        {% set new_val = new_model.metrics.get(metric_key, 0) or 0 %}
+                        {% if metric_key == 'test_r2' %}
+                            {% set improvement = new_val - old_val %}
+                        {% else %}
+                            {% set improvement = old_val - new_val %}  {# Para MSE y MAE, menor es mejor #}
+                        {% endif %}
+                        {% if improvement > 0.0001 %}
+                        <span class="improvement-positive">
+                            ↑ +{{ "%.4f"|format(improvement) }}
+                        </span>
+                        {% elif improvement < -0.0001 %}
+                        <span class="improvement-negative">
+                            ↓ {{ "%.4f"|format(improvement) }}
+                        </span>
+                        {% elif improvement == 0 %}
+                        <span class="improvement-neutral">
+                            - Idéntico
+                        </span>
+                        {% else %}
+                        <span class="improvement-minimal">
+                            ~ {{ "%.4f"|format(improvement) }} (mínimo)
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Detalles del Entrenamiento -->
+    <div class="comparison-card">
+        <h5>Detalles del Entrenamiento</h5>
+        
+        <div class="training-details">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Configuración del Modelo</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>Tipo:</strong> {{ new_model.model_type }}</li>
+                        <li><strong>Tarea:</strong> {{ new_model.task_type|title }}</li>
+                        <li><strong>Variable Target:</strong> {{ new_model.target_column }}</li>
+                        <li><strong>Características:</strong> {{ new_model.feature_columns|length }}</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>Información del Dataset</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>Registros Originales:</strong> {{ retraining_info.original_records }}</li>
+                        <li><strong>Registros Agregados:</strong> {{ retraining_info.new_records_count }}</li>
+                        <li><strong>Total Final:</strong> {{ retraining_info.total_records }}</li>
+                        <li><strong>Fecha:</strong> {{ retraining_info.retrain_date }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Gráfico de Distribución del Target -->
+    {% if retraining_info and retraining_info.preparation_info and retraining_info.preparation_info.target_distribution %}
+    <div class="comparison-card">
+        <h5>Distribución de la Variable Target: {{ new_model.target_column }}</h5>
+        <div class="chart-container" style="position: relative; height: 400px; margin-top: 20px;">
+            <canvas id="targetDistributionChart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Vista Previa de Nuevos Registros -->
+    {% if retraining_info.new_records_preview %}
+    <div class="comparison-card">
+        <h5>Nuevos Registros Agregados</h5>
+        <p class="text-muted">Vista previa de los primeros registros agregados al dataset</p>
+        
+        <div class="new-records-preview">
+            <table class="table table-sm table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>{{ new_model.target_column }}</th>
+                        {% for feature in new_model.feature_columns %}
+                        <th>{{ feature }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in retraining_info.new_records_preview %}
+                    <tr>
+                        <td><strong>{{ record.get('target_value', record.get(new_model.target_column, '')) }}</strong></td>
+                        {% for feature in new_model.feature_columns %}
+                        <td>{{ record.get(feature, '') }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if retraining_info.new_records_count > retraining_info.new_records_preview|length %}
+        <small class="text-muted">
+            Mostrando {{ retraining_info.new_records_preview|length }} de {{ retraining_info.new_records_count }} registros agregados
+        </small>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Botones de Acción -->
+    <div class="action-buttons">
+        <form method="POST" action="{{ url_for('training.save_retrained_model', temp_model_id=temp_model_id) }}" style="display: inline-block;">
+            <button type="submit" class="btn btn-success btn-lg">
+                Guardar Modelo Reentrenado
+            </button>
+        </form>
+        
+        <form method="POST" action="{{ url_for('training.discard_retrained_model', temp_model_id=temp_model_id) }}" style="display: inline-block;"
+              onsubmit="return confirm('¿Estás seguro de que deseas descartar este modelo? Esta acción no se puede deshacer.')">
+            <button type="submit" class="btn btn-danger btn-lg">
+                Descartar Modelo
+            </button>
+        </form>
+    </div>
+    
+    <!-- Información Adicional -->
+    <div class="mt-4 text-center text-muted">
+        <small>
+            El modelo original se mantiene disponible como respaldo. 
+            Puedes comparar ambos modelos en la sección de modelos guardados.
+        </small>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animación de entrada para los elementos de comparación
+    const metricComparisons = document.querySelectorAll('.metric-comparison');
+    metricComparisons.forEach((element, index) => {
+        setTimeout(() => {
+            element.style.opacity = '0';
+            element.style.transform = 'translateX(-20px)';
+            element.style.transition = 'all 0.3s ease';
+            
+            setTimeout(() => {
+                element.style.opacity = '1';
+                element.style.transform = 'translateX(0)';
+            }, 50);
+        }, index * 100);
+    });
+    
+    // Generar gráfico de distribución del target en reentrenamiento
+    {% if retraining_info and retraining_info.preparation_info and retraining_info.preparation_info.target_distribution %}
+    const targetDistribution = {{ retraining_info.preparation_info.target_distribution | tojson }};
+    const targetPercentages = {{ retraining_info.preparation_info.target_distribution_percentages | tojson }};
+    
+    if (Object.keys(targetDistribution).length > 0) {
+        const ctx = document.getElementById('targetDistributionChart').getContext('2d');
+        
+        const labels = Object.keys(targetDistribution);
+        const counts = Object.values(targetDistribution);
+        const percentages = Object.values(targetPercentages);
+        
+        // Colores más suaves para reentrenamiento
+        const colors = [
+            '#28a745', '#17a2b8', '#ffc107', '#dc3545', '#6f42c1', 
+            '#fd7e14', '#20c997', '#e83e8c', '#6610f2', '#007bff'
+        ];
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Cantidad total (datos originales + nuevos)',
+                    data: counts,
+                    backgroundColor: colors.slice(0, labels.length).map(color => color + '80'),
+                    borderColor: colors.slice(0, labels.length),
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Distribución del Target Después del Reentrenamiento',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        color: '#333'
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const percentage = percentages[context.dataIndex];
+                                return `${context.parsed.y} casos (${percentage}%)`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        },
+                        title: {
+                            display: true,
+                            text: 'Número de casos'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Valores del Target'
+                        }
+                    }
+                },
+                animation: {
+                    duration: 2000,
+                    easing: 'easeInOutQuart'
+                }
+            }
+        });
+    }
+    {% endif %}
+    
+    // Generar gráfico de feature importance si está disponible en reentrenamiento
+    {% if retraining_info and retraining_info.feature_importance %}
+    const featureImportanceRetrain = {{ retraining_info.feature_importance | tojson }};
+    
+    if (Object.keys(featureImportanceRetrain).length > 0) {
+        // Crear canvas para feature importance
+        let importanceCanvasRetrain = document.getElementById('featureImportanceChartRetrain');
+        if (!importanceCanvasRetrain) {
+            // Buscar donde insertar el gráfico
+            const targetChartContainer = document.querySelector('.comparison-card');
+            if (targetChartContainer && targetChartContainer.nextElementSibling) {
+                const chartDiv = document.createElement('div');
+                chartDiv.className = 'comparison-card';
+                chartDiv.innerHTML = `
+                    <h5>Importancia de Variables (Modelo Reentrenado)</h5>
+                    <div class="chart-container" style="position: relative; height: 450px; margin-top: 20px;">
+                        <canvas id="featureImportanceChartRetrain"></canvas>
+                    </div>
+                `;
+                targetChartContainer.parentNode.insertBefore(chartDiv, targetChartContainer.nextElementSibling);
+                importanceCanvasRetrain = document.getElementById('featureImportanceChartRetrain');
+            }
+        }
+        
+        if (importanceCanvasRetrain) {
+            const ctx = importanceCanvasRetrain.getContext('2d');
+            
+            // Ordenar features por importancia
+            const sortedFeaturesRetrain = Object.entries(featureImportanceRetrain)
+                .sort(([,a], [,b]) => Math.abs(b) - Math.abs(a))
+                .slice(0, 15); // Máximo 15 features para reentrenamiento
+            
+            const labels = sortedFeaturesRetrain.map(([name]) => name);
+            const values = sortedFeaturesRetrain.map(([, value]) => Math.abs(value));
+            const originalValues = sortedFeaturesRetrain.map(([, value]) => value);
+            
+            // Colores específicos para reentrenamiento (tema verde)
+            const colors = values.map((_, index) => {
+                const intensity = 0.9 - (index / values.length) * 0.4;
+                return `rgba(40, 167, 69, ${intensity})`;
+            });
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Importancia',
+                        data: values,
+                        backgroundColor: colors,
+                        borderColor: '#28a745',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Variables Más Importantes del Modelo Reentrenado',
+                            font: { size: 14, weight: 'bold' },
+                            color: '#333'
+                        },
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    return `Variable: ${context[0].label}`;
+                                },
+                                label: function(context) {
+                                    const originalValue = originalValues[context.dataIndex];
+                                    return [
+                                        `Importancia: ${originalValue.toFixed(6)}`,
+                                        'Después del reentrenamiento',
+                                        'Mayor valor = más relevante'
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Importancia'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Variables'
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 2500,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+        }
+    }
+    {% endif %}
+});
+</script>
+{% endblock %}

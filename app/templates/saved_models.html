@@ -1,0 +1,601 @@
+{% extends "base.html" %}
+
+{% block title %}Modelos Guardados{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/model_training_hub.css') }}">
+<style>
+    /* Estilos específicos para modelos guardados */
+    .models-header {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .models-header h1 {
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+    
+    .models-header p {
+        margin-bottom: 0;
+        opacity: 0.9;
+    }
+    
+    .models-stats {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+        border-left: 4px solid #28a745;
+    }
+    
+    .model-card {
+        background: white;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e9ecef;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        overflow: hidden;
+    }
+    
+    .model-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    .model-type-badge {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+    
+    .classification {
+        background: #e3f2fd;
+        color: #1565c0;
+    }
+    
+    .regression {
+        background: #f3e5f5;
+        color: #7b1fa2;
+    }
+    
+    .association {
+        background: #e8f5e8;
+        color: #2e7d32;
+    }
+    
+    .predict-btn {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        border: none;
+        color: white;
+        font-weight: bold;
+    }
+    
+    .predict-btn:hover {
+        background: linear-gradient(135deg, #ee5a24, #d63031);
+        color: white;
+    }
+    
+    .btn-purple {
+        background: linear-gradient(135deg, #6f42c1, #8e44ad);
+        color: white;
+        border: none;
+    }
+    
+    .btn-purple:hover {
+        background: linear-gradient(135deg, #5a359c, #7d3f9a);
+        color: white;
+    }
+    
+    .no-models {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+    }
+    
+    .no-models i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        color: #dee2e6;
+    }
+    
+    .model-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid #dee2e6;
+        padding: 1.5rem;
+    }
+    
+    .model-header h5 {
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .model-header p {
+        margin-bottom: 0;
+        color: #6c757d;
+    }
+    
+    .model-body {
+        padding: 1.5rem;
+    }
+    
+    .model-actions {
+        background-color: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+        padding: 1rem 1.5rem;
+    }
+    
+    .status-badge {
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+    }
+    
+    .status-complete {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .status-metadata-only {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+    }
+    
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+    
+    .metric-item {
+        background-color: #f8f9fa;
+        padding: 0.75rem;
+        border-radius: 0.375rem;
+        text-align: center;
+        border: 1px solid #e9ecef;
+    }
+    
+    .metric-value {
+        font-weight: 600;
+        font-size: 1.1em;
+        color: #28a745;
+        display: block;
+    }
+    
+    .metric-label {
+        font-size: 0.875em;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6c757d;
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+        border: 2px dashed #dee2e6;
+    }
+    
+    .empty-state h3 {
+        color: #495057;
+        margin-bottom: 1rem;
+    }
+    
+    .empty-state p {
+        margin-bottom: 0.5rem;
+    }
+    
+    .info-section {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+    }
+    
+    .info-section h6 {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        font-size: 1rem;
+    }
+    
+    .btn-group-actions {
+        display: flex;
+        gap: 0.3rem;
+        align-items: center;
+        flex-wrap: nowrap;
+        justify-content: flex-end;
+    }
+    
+    .btn-group-actions .btn {
+        flex: 0 0 auto;
+        min-width: 65px;
+        max-width: 80px;
+        text-align: center;
+        padding: 0.25rem 0.4rem;
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+    
+    .feature-list {
+        font-size: 0.8rem;
+        color: #6c757d;
+        line-height: 1.2;
+    }
+    
+    /* Estilos para modales */
+    .modal-content {
+        border-radius: 0.5rem;
+        border: none;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+    
+    .modal-header {
+        border-bottom: 1px solid #dee2e6;
+        background-color: #f8f9fa;
+        border-radius: 0.5rem 0.5rem 0 0;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid #dee2e6;
+        background-color: #f8f9fa;
+        border-radius: 0 0 0.5rem 0.5rem;
+    }
+    
+    .delete-form {
+        display: inline;
+        margin: 0;
+    }
+    
+    /* Prevenir conflictos de z-index */
+    .modal {
+        z-index: 1055;
+    }
+    
+    .modal-backdrop {
+        z-index: 1050;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header Section -->
+    <div class="models-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1>Modelos Guardados</h1>
+                <p>Gestiona y reutiliza tus modelos entrenados de machine learning</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{{ url_for('training.training') }}" class="btn btn-light btn-lg">
+                    Entrenar Nuevo Modelo
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats Section -->
+    {% if models %}
+    <div class="models-stats">
+        <div class="row">
+            <div class="col-md-12">
+                <h5 class="mb-3">Resumen de Modelos</h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="metric-item">
+                            <span class="metric-value">{{ models|length }}</span>
+                            <div class="metric-label">Total de Modelos</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-item">
+                            <span class="metric-value">{{ models|selectattr('status', 'equalto', 'complete')|list|length }}</span>
+                            <div class="metric-label">Modelos Completos</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-item">
+                            <span class="metric-value">{{ models|selectattr('task_type', 'equalto', 'classification')|list|length }}</span>
+                            <div class="metric-label">Clasificación</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-item">
+                            <span class="metric-value">{{ models|selectattr('task_type', 'equalto', 'regression')|list|length }}</span>
+                            <div class="metric-label">Regresión</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Models Section -->
+    <div class="model-section">
+        {% if models %}
+            <h3 class="section-title">Tus Modelos Entrenados</h3>
+            <p class="section-description">
+                Modelos disponibles para predicciones, descarga y análisis
+            </p>
+            
+            {% for model in models %}
+            <div class="model-card">
+                <div class="model-header">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h5>{{ model.model_name }}</h5>
+                            <p>
+                                {{ model.model_type|title|replace('_', ' ') }} - 
+                                {{ model.task_type|title }}
+                                {% if model.file_used %}
+                                ({{ model.file_used }})
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <span class="status-badge status-{{ model.status }}">
+                                {% if model.status == 'complete' %}
+                                    Completo
+                                {% else %}
+                                    Solo Metadatos
+                                {% endif %}
+                            </span>
+                            {% if model.model_size_mb %}
+                            <small class="text-muted d-block mt-1">{{ model.model_size_mb }} MB</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="model-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h6>Información del Modelo</h6>
+                                <ul class="list-unstyled">
+                                    <li><strong>Creado:</strong> {{ model.created_at[:19]|replace('T', ' ') }}</li>
+                                    {% if model.target_column %}
+                                    <li><strong>Variable Target:</strong> {{ model.target_column }}</li>
+                                    {% endif %}
+                                    {% if model.n_features %}
+                                    <li><strong>Características:</strong> {{ model.n_features }}</li>
+                                    {% endif %}
+                                    {% if model.n_classes %}
+                                    <li><strong>Clases:</strong> {{ model.n_classes }}</li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            {% if model.metrics %}
+                            <div class="info-section">
+                                <h6>Métricas de Rendimiento</h6>
+                                <div class="metrics-grid">
+                                    {% if model.task_type == 'classification' %}
+                                        {% if model.metrics.test_accuracy %}
+                                        <div class="metric-item">
+                                            <span class="metric-value">{{ "%.3f"|format(model.metrics.test_accuracy) }}</span>
+                                            <div class="metric-label">Accuracy</div>
+                                        </div>
+                                        {% endif %}
+                                        {% if model.metrics.test_precision_macro %}
+                                        <div class="metric-item">
+                                            <span class="metric-value">{{ "%.3f"|format(model.metrics.test_precision_macro) }}</span>
+                                            <div class="metric-label">Precision</div>
+                                        </div>
+                                        {% endif %}
+                                        {% if model.metrics.test_recall_macro %}
+                                        <div class="metric-item">
+                                            <span class="metric-value">{{ "%.3f"|format(model.metrics.test_recall_macro) }}</span>
+                                            <div class="metric-label">Recall</div>
+                                        </div>
+                                        {% endif %}
+                                        {% if model.metrics.test_f1_macro %}
+                                        <div class="metric-item">
+                                            <span class="metric-value">{{ "%.3f"|format(model.metrics.test_f1_macro) }}</span>
+                                            <div class="metric-label">F1-Score</div>
+                                        </div>
+                                        {% endif %}
+                                    {% elif model.task_type == 'regression' %}
+                                        {% if model.metrics.test_r2 %}
+                                        <div class="metric-item">
+                                            <span class="metric-value">{{ "%.3f"|format(model.metrics.test_r2) }}</span>
+                                            <div class="metric-label">R²</div>
+                                        </div>
+                                        {% endif %}
+                                        {% if model.metrics.test_mse %}
+                                        <div class="metric-item">
+                                            <span class="metric-value">{{ "%.3f"|format(model.metrics.test_mse) }}</span>
+                                            <div class="metric-label">MSE</div>
+                                        </div>
+                                        {% endif %}
+                                        {% if model.metrics.test_mae %}
+                                        <div class="metric-item">
+                                            <span class="metric-value">{{ "%.3f"|format(model.metrics.test_mae) }}</span>
+                                            <div class="metric-label">MAE</div>
+                                        </div>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="info-section">
+                                <h6>Métricas de Rendimiento</h6>
+                                <div class="alert alert-info" style="font-size: 0.875rem; margin: 0.5rem 0;">
+                                    <strong>Métricas no disponibles</strong><br>
+                                    {% if model.task_type == 'classification' %}
+                                    Este modelo de clasificación fue guardado sin métricas de rendimiento. 
+                                    Las métricas típicas incluyen precisión, recall, F1-score, etc.
+                                    {% elif model.task_type == 'regression' %}
+                                    Este modelo de regresión fue guardado sin métricas de rendimiento.
+                                    Las métricas típicas incluyen R², MSE, MAE, etc.
+                                    {% else %}
+                                    Este modelo fue guardado sin métricas de rendimiento.
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">
+                                    Tip: Para obtener métricas, entrena y guarda el modelo inmediatamente después del entrenamiento.
+                                </small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if model.message %}
+                    <div class="alert alert-info mt-3">
+                        {{ model.message }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="model-actions">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            {% if model.feature_columns %}
+                            <div class="feature-list">
+                                <strong>Características:</strong>
+                                {% for feature in model.feature_columns[:2] %}
+                                    {{ feature }}{% if not loop.last %}, {% endif %}
+                                {% endfor %}
+                                {% if model.feature_columns|length > 2 %}
+                                    y {{ model.feature_columns|length - 2 }} más...
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <div class="btn-group-actions justify-content-end">
+                                <a href="{{ url_for('prediction.predict_with_model', model_name=model.model_name) }}" 
+                                   class="btn btn-sm predict-btn" title="Hacer predicciones">
+                                    Predecir
+                                </a>
+                                
+                                {% if model.target_column and model.feature_columns %}
+                                <a href="{{ url_for('training.add_records', model_name=model.model_name) }}" 
+                                   class="btn btn-sm btn-purple" title="Agregar datos y reentrenar">
+                                    Agregar
+                                </a>
+                                {% endif %}
+                                
+                                <a href="{{ url_for('prediction.model_details', model_name=model.model_name) }}" 
+                                   class="btn btn-sm btn-info text-white" title="Ver detalles completos">
+                                    Detalles
+                                </a>
+                                
+                                <a href="{{ url_for('training.download_model', model_name=model.model_name) }}" 
+                                   class="btn btn-sm btn-success" title="Descargar modelo">
+                                    Descargar
+                                </a>
+                                
+                                <button type="button" class="btn btn-sm btn-danger" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteModal_{{ model.model_name|replace(' ', '_')|replace('.', '_')|replace('-', '_') }}"
+                                        title="Eliminar modelo">
+                                    Eliminar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <!-- Modales de confirmación de eliminación (fuera del loop) -->
+            {% for model in models %}
+            <div class="modal fade" id="deleteModal_{{ model.model_name|replace(' ', '_')|replace('.', '_')|replace('-', '_') }}" tabindex="-1" aria-labelledby="deleteModalLabel_{{ model.model_name|replace(' ', '_')|replace('.', '_')|replace('-', '_') }}" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="deleteModalLabel_{{ model.model_name|replace(' ', '_')|replace('.', '_')|replace('-', '_') }}">Confirmar Eliminación</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>¿Está seguro de que desea eliminar el modelo <strong>{{ model.model_name }}</strong>?</p>
+                            <p class="text-muted">Esta acción no se puede deshacer.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <form class="delete-form d-inline" method="POST" action="{{ url_for('prediction.delete_model', model_name=model.model_name) }}">
+                                <input type="hidden" name="confirm" value="yes">
+                                <button type="submit" class="btn btn-danger">
+                                    Eliminar
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+        {% else %}
+            <div class="empty-state">
+                <h3>No hay modelos guardados</h3>
+                <p>Aún no has guardado ningún modelo entrenado.</p>
+                <p>Entrena un modelo y usa el botón "Guardar Modelo" para guardarlo aquí.</p>
+                <a href="{{ url_for('training.training') }}" class="btn btn-primary btn-lg mt-3">
+                    Entrenar Primer Modelo
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // Inicializar funcionalidades de modelos guardados
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Modelos guardados cargados: {{ models|length }}');
+        
+        // Inicializar modales de Bootstrap
+        var deleteModals = document.querySelectorAll('[id^="deleteModal_"]');
+        deleteModals.forEach(function(modalElement) {
+            new bootstrap.Modal(modalElement, {
+                keyboard: true,
+                backdrop: 'static'
+            });
+        });
+        
+        // Efecto hover mejorado para las cards
+        document.querySelectorAll('.model-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.borderColor = '#28a745';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.borderColor = '#e9ecef';
+            });
+        });
+        
+        // Animación para métricas
+        document.querySelectorAll('.metric-value').forEach(metric => {
+            metric.style.transition = 'color 0.3s ease';
+            metric.addEventListener('mouseenter', function() {
+                this.style.color = '#20c997';
+            });
+            metric.addEventListener('mouseleave', function() {
+                this.style.color = '#28a745';
+            });
+        });
+        
+        // Los formularios funcionan normalmente sin JavaScript adicional
+    });
+</script>
+{% endblock %}

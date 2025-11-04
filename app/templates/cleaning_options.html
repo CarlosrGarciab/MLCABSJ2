@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Opciones de Limpieza - {{ filename }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cleaning_options.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header principal -->
+    <div class="page-header">
+        <h4>
+            Opciones de Limpieza de Datos
+        </h4>
+        <small><i class="fas fa-file-csv"></i> Archivo: {{ filename }}</small>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="main-card">
+                <div class="card-body">
+                    <!-- Alert de información del dataset -->
+                    <div class="dataset-info-alert">
+                        <strong>Información del Dataset:</strong>
+                        {{ analysis.get('total_rows', 0) }} filas × {{ analysis.get('total_cols', 0) }} columnas
+                    </div>
+
+                    <!-- Análisis de recomendaciones -->
+                    <div class="analysis-section mb-4">
+                        <h5>Análisis y Recomendaciones</h5>
+                        
+                        {% if analysis.get('recommendations', []) %}
+                            {% for rec in analysis.get('recommendations', []) %}
+                                <div class="recommendation-card {% if rec.recommended %}recommended{% else %}ok{% endif %}">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="card-title">
+                                                    {% if rec.recommended %}
+                                                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                                                    {% else %}
+                                                        <i class="fas fa-check-circle text-success"></i>
+                                                    {% endif %}
+                                                    {{ rec.title }}
+                                                </h6>
+                                                <p class="card-text">{{ rec.description }}</p>
+                                                <small class="text-muted">
+                                                    <strong>Impacto:</strong> {{ rec.impact }}
+                                                </small>
+                                            </div>
+                                            {% if rec.recommended %}
+                                                <span class="badge bg-warning">Recomendado</span>
+                                            {% else %}
+                                                <span class="badge bg-success">OK</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <!-- Opciones de limpieza -->
+                    <form action="{{ url_for('data.cleaning_options') }}" method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="options-section">
+                                    <h5>Selecciona las Operaciones</h5>
+                                    
+                                    <!-- Eliminar filas vacías -->
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="remove_empty_rows" id="remove_empty_rows" 
+                                               {% if analysis.get('empty_rows', 0) > 0 %}checked{% endif %}>
+                                        <label class="form-check-label" for="remove_empty_rows">
+                                            <strong>Eliminar filas completamente vacías</strong>
+                                            {% if analysis.get('empty_rows', 0) > 0 %}
+                                                <small>{{ analysis.get('empty_rows', 0) }} filas serán eliminadas</small>
+                                            {% else %}
+                                                <small>No hay filas vacías</small>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+
+                                    <!-- Eliminar filas con muchos valores faltantes -->
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="remove_rows_many_missing" id="remove_rows_many_missing"
+                                               {% if analysis.get('rows_with_many_missing', 0) > 0 %}checked{% endif %}>
+                                        <label class="form-check-label" for="remove_rows_many_missing">
+                                            <strong>Eliminar filas con muchos valores faltantes</strong>
+                                            {% if analysis.get('rows_with_many_missing', 0) > 0 %}
+                                                <small>{{ analysis.get('rows_with_many_missing', 0) }} filas con >50% de valores faltantes serán eliminadas</small>
+                                            {% else %}
+                                                <small>No hay filas con excesivos valores faltantes</small>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+
+                                    <!-- Eliminar columnas vacías -->
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="remove_empty_cols" id="remove_empty_cols"
+                                               {% if analysis.get('empty_cols', 0) > 0 %}checked{% endif %}>
+                                        <label class="form-check-label" for="remove_empty_cols">
+                                            <strong>Eliminar columnas completamente vacías</strong>
+                                            {% if analysis.get('empty_cols', 0) > 0 %}
+                                                <small>{{ analysis.get('empty_cols', 0) }} columnas serán eliminadas: {{ analysis.get('empty_col_names', [])|join(', ') }}</small>
+                                            {% else %}
+                                                <small>No hay columnas vacías</small>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="options-section">
+                                    <!-- Eliminar duplicados -->
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="remove_duplicates" id="remove_duplicates"
+                                               {% if analysis.get('duplicates', 0) > 0 %}checked{% endif %}>
+                                        <label class="form-check-label" for="remove_duplicates">
+                                            <strong>Eliminar filas duplicadas</strong>
+                                            {% if analysis.get('duplicates', 0) > 0 %}
+                                                <small>{{ analysis.get('duplicates', 0) }} filas duplicadas serán eliminadas</small>
+                                            {% else %}
+                                                <small>No hay filas duplicadas</small>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+
+
+                                    <!-- Normalizar/Escalar datos numéricos -->
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="normalize_data" id="normalize_data"
+                                               {% if analysis.get('cols_need_normalization', [])|length > 0 %}checked{% endif %}>
+                                        <label class="form-check-label" for="normalize_data">
+                                            <strong>Normalizar/Escalar datos numéricos</strong>
+                                            {% if analysis.get('cols_need_normalization', [])|length > 0 %}
+                                                <small>{{ analysis.get('cols_need_normalization', [])|length }} columnas se beneficiarían de normalización: {{ analysis.get('cols_need_normalization', [])|join(', ') }}</small>
+                                            {% else %}
+                                                <small>No se requiere normalización</small>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Método de normalización -->
+                        <div class="normalization-methods" id="normalization_method_section" style="display: none;">
+                            <label class="form-label">
+                                <strong>Método de normalización:</strong>
+                            </label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="normalization_method" id="norm_standard" value="standard" checked>
+                                <label class="form-check-label" for="norm_standard">
+                                    <strong>StandardScaler (Z-score)</strong>
+                                    <small>Media = 0, Desviación estándar = 1. Recomendado para datos con distribución normal.</small>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="normalization_method" id="norm_minmax" value="minmax">
+                                <label class="form-check-label" for="norm_minmax">
+                                    <strong>MinMaxScaler (0-1)</strong>
+                                    <small>Escala los valores entre 0 y 1. Ideal para datos sin valores atípicos extremos.</small>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="normalization_method" id="norm_robust" value="robust">
+                                <label class="form-check-label" for="norm_robust">
+                                    <strong>RobustScaler (robusto)</strong>
+                                    <small>Usa mediana y rango intercuartil. Resistente a valores atípicos.</small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Botones de acción -->
+                        <div class="actions-section mt-3">
+                            <div class="d-flex flex-row justify-content-between align-items-center w-100 gap-4 py-2">
+                                <!-- Botón aplicar todo recomendado -->
+                                <div class="flex-fill text-start px-2">
+                                    <button type="button" class="btn btn-warning w-100" id="selectAllRecommendedBtn">
+                                        Aplicar Todo Recomendado
+                                    </button>
+                                </div>
+                                <!-- Botón procesar -->
+                                <div class="flex-fill text-center px-2">
+                                    <button type="submit" class="btn btn-success w-100">
+                                        Procesar
+                                    </button>
+                                </div>
+                                <!-- Botón omitir limpieza -->
+                                <div class="flex-fill text-end px-2">
+                                    <button type="submit" name="omit_cleaning" value="1" class="btn btn-outline-primary w-100">
+                                        Omitir Limpieza
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Datos del análisis en formato JSON -->
+<script id="analysis-data" type="application/json">{{ analysis | tojson }}</script>
+<script src="{{ url_for('static', filename='js/cleaning_options.js') }}"></script>
+{% endblock %}

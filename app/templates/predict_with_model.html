@@ -1,0 +1,460 @@
+{% extends "base.html" %}
+
+{% block title %}Predicciones con {{ model_name }}{% endblock %}
+
+{% block styles %}
+<style>
+    .prediction-header {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .model-info {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        border-left: 4px solid #ff6b6b;
+        margin-bottom: 2rem;
+    }
+    
+    .upload-area {
+        border: 2px dashed #dee2e6;
+        border-radius: 0.5rem;
+        padding: 3rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        background: white;
+    }
+    
+    .upload-area:hover {
+        border-color: #ff6b6b;
+        background: #fff5f5;
+    }
+    
+    .upload-area.dragover {
+        border-color: #ff6b6b;
+        background: #fff5f5;
+        transform: scale(1.02);
+    }
+    
+    .features-list {
+        max-height: 200px;
+        overflow-y: auto;
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.375rem;
+    }
+    
+    .feature-tag {
+        display: inline-block;
+        background: #e9ecef;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+        margin: 0.125rem;
+    }
+    
+    .requirement-item {
+        padding: 0.75rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        margin-bottom: 0.5rem;
+        background: white;
+    }
+    
+    .requirement-icon {
+        width: 20px;
+        text-align: center;
+        margin-right: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="prediction-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1>Predicciones con Modelo</h1>
+                <p class="mb-0">Carga un archivo CSV para generar predicciones usando el modelo entrenado</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{{ url_for('prediction.saved_models') }}" class="btn btn-light">
+                    Volver a Modelos
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Información del Modelo -->
+    <div class="model-info">
+        <div class="row">
+            <div class="col-md-6">
+                <h4>{{ model_name }}</h4>
+                <p class="mb-3">
+                    <span class="badge bg-primary">{{ metadata.model_type|title|replace('_', ' ') }}</span>
+                    <span class="badge bg-secondary">{{ metadata.task_type|title }}</span>
+                </p>
+                
+                <div class="mb-3">
+                    <strong>Variable Objetivo:</strong> 
+                    <code>{{ metadata.target_column }}</code>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>Características Requeridas:</strong> {{ metadata.n_features }}
+                    {% if metadata.n_classes %}
+                    <br><strong>Clases del Modelo:</strong> {{ metadata.n_classes }}
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                {% if metadata.metrics %}
+                <h6>Métricas del Modelo</h6>
+                {% if metadata.task_type == 'classification' %}
+                    {% if metadata.metrics.test_accuracy %}
+                    <div>Precisión: <strong>{{ (metadata.metrics.test_accuracy * 100)|round(1) }}%</strong></div>
+                    {% endif %}
+                    {% if metadata.metrics.test_f1_macro %}
+                    <div>F1-Score: <strong>{{ (metadata.metrics.test_f1_macro * 100)|round(1) }}%</strong></div>
+                    {% endif %}
+                {% elif metadata.task_type == 'regression' %}
+                    {% if metadata.metrics.test_r2 %}
+                    <div>R²: <strong>{{ (metadata.metrics.test_r2)|round(3) }}</strong></div>
+                    {% endif %}
+                    {% if metadata.metrics.test_mse %}
+                    <div>MSE: <strong>{{ metadata.metrics.test_mse|round(3) }}</strong></div>
+                    {% endif %}
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Requisitos del Archivo -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Requisitos del Archivo CSV</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Formato del Archivo</h6>
+                            <div class="requirement-item">
+                                
+                                Archivo en formato CSV
+                            </div>
+                            <div class="requirement-item">
+                                
+                                Tamaño máximo: 16MB
+                            </div>
+                            <div class="requirement-item">
+                                
+                                Al menos 5 filas de datos
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Columnas Requeridas</h6>
+                            <p class="text-muted mb-2">Tu archivo debe contener estas {{ metadata.feature_columns|length }} columnas:</p>
+                            <div class="features-list">
+                                {% for feature in metadata.feature_columns %}
+                                <span class="feature-tag">{{ feature }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Área de Upload -->
+    <div class="row">
+        <div class="col-md-12">
+            <form method="POST" enctype="multipart/form-data" action="{{ url_for('prediction.upload_for_prediction', model_name=model_name) }}" id="uploadForm">
+                {{ form.hidden_tag() }}
+                
+                <div class="upload-area" id="uploadArea">
+
+                    <h4>Arrastra tu archivo CSV aquí</h4>
+                    <p class="text-muted mb-3">o haz clic para seleccionar desde tu computadora</p>
+                    
+                    <div class="mb-3">
+                        {{ form.file(class="form-control", id="fileInput", style="display: none;", accept=".csv") }}
+                        <button type="button" class="btn btn-primary btn-lg" id="selectFileBtn">
+                            Seleccionar Archivo CSV
+                        </button>
+                    </div>
+                    
+                    <div id="fileInfo" class="mt-3" style="display: none;">
+                        <div class="alert alert-info">
+                            <strong>Archivo seleccionado:</strong> <span id="fileName"></span><br>
+                            <strong>Tamaño:</strong> <span id="fileSize"></span>
+                        </div>
+                    </div>
+                    
+                    {% if form.file.errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.file.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-success btn-lg" id="submitBtn" disabled>
+                        Analizar y Predecir
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Información Adicional -->
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>¿Cómo funciona?</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+
+                                <h6>1. Sube tu archivo</h6>
+                                <p class="small text-muted">Carga un CSV con las mismas columnas que se usaron para entrenar el modelo</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+
+                                <h6>2. Validación automática</h6>
+                                <p class="small text-muted">Verificamos que tu archivo sea compatible con el modelo</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+
+                                <h6>3. Descarga resultados</h6>
+                                <p class="small text-muted">Obtén un archivo CSV con las predicciones y niveles de confianza</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Return to Models Button -->
+    <div class="container mt-4 mb-4">
+        <div class="row justify-content-center">
+            <div class="col-md-6 text-center">
+                <a href="{{ url_for('prediction.saved_models') }}" class="btn btn-outline-secondary btn-lg">
+                    Volver a Modelos Guardados
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const selectFileBtn = document.getElementById('selectFileBtn');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    // Highlight drop area when item is dragged over it
+    ['dragenter', 'dragover'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight() {
+        uploadArea.classList.add('dragover');
+    }
+    
+    function unhighlight() {
+        uploadArea.classList.remove('dragover');
+    }
+    
+    // Handle dropped files
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        unhighlight();
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            const file = files[0];
+            if (file.name.toLowerCase().endsWith('.csv')) {
+                // Manually set the files to the input
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                fileInput.files = dt.files;
+                handleFileSelection(file);
+            } else {
+                alert('Por favor, selecciona un archivo CSV válido.');
+            }
+        }
+    });
+    
+    // Handle click on upload area (excluding button clicks)
+    uploadArea.addEventListener('click', function(e) {
+        // Only trigger file selection if clicking on the upload area itself, not on the button
+        if (e.target === uploadArea || (e.target.tagName !== 'BUTTON' && !e.target.closest('button'))) {
+            fileInput.click();
+        }
+    });
+    
+    // Handle button click
+    selectFileBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        fileInput.click();
+    });
+    
+    // Handle file input change
+    fileInput.addEventListener('change', function(e) {
+        console.log('File input changed, files:', this.files.length);
+        if (this.files.length > 0) {
+            const file = this.files[0];
+            if (validateFile(file)) {
+                handleFileSelection(file);
+                hideError();
+            } else {
+                resetFileUI();
+                this.value = ''; // Limpiar input
+            }
+        } else {
+            resetFileUI();
+        }
+    });
+    
+    function validateFile(file) {
+        const maxSize = 16 * 1024 * 1024; // 16MB
+        const allowedTypes = ['text/csv', 'application/csv', 'text/plain'];
+        const csvExtensions = ['csv'];
+        
+        // Validar extension
+        const extension = file.name.split('.').pop().toLowerCase();
+        if (!csvExtensions.includes(extension)) {
+            showError('Tipo de archivo no valido. Solo se permiten archivos CSV.');
+            return false;
+        }
+        
+        // Validar tamano
+        if (file.size > maxSize) {
+            showError('Archivo demasiado grande. Tamano maximo: 16MB.');
+            return false;
+        }
+        
+        // Validar que no este vacio
+        if (file.size === 0) {
+            showError('El archivo esta vacio.');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    function handleFileSelection(file) {
+        console.log('Handling file selection:', file.name);
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+        fileInfo.style.display = 'block';
+        submitBtn.disabled = false;
+        
+        // Cambiar apariencia del área de upload
+        uploadArea.style.borderColor = '#28a745';
+        uploadArea.style.backgroundColor = '#f8fff9';
+        
+        // Update button text
+        selectFileBtn.textContent = 'Cambiar Archivo';
+    }
+    
+    function resetFileUI() {
+        fileInfo.style.display = 'none';
+        submitBtn.disabled = true;
+        uploadArea.style.borderColor = '';
+        uploadArea.style.backgroundColor = '';
+        selectFileBtn.textContent = 'Seleccionar Archivo CSV';
+    }
+    
+    function showError(message) {
+        let errorDiv = document.getElementById('fileErrorMessage');
+        if (!errorDiv) {
+            errorDiv = document.createElement('div');
+            errorDiv.id = 'fileErrorMessage';
+            errorDiv.className = 'alert alert-danger mt-2';
+            uploadArea.parentNode.insertBefore(errorDiv, uploadArea.nextSibling);
+        }
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+    }
+    
+    function hideError() {
+        const errorDiv = document.getElementById('fileErrorMessage');
+        if (errorDiv) {
+            errorDiv.style.display = 'none';
+        }
+    }
+    
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    // Form validation
+    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+        console.log('Form submitted, files:', fileInput.files.length);
+        
+        if (!fileInput.files.length) {
+            e.preventDefault();
+            showError('Por favor, selecciona un archivo CSV antes de continuar.');
+            return false;
+        }
+        
+        const file = fileInput.files[0];
+        if (!validateFile(file)) {
+            e.preventDefault();
+            return false;
+        }
+        
+        hideError();
+        // Show loading state
+        submitBtn.innerHTML = 'Analizando archivo...';
+        submitBtn.disabled = true;
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,80 @@
+# ===========================================
+# PYTHON Y ENTORNO VIRTUAL
+# ===========================================
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+venv/
+.env
+.env.*
+
+# ===========================================
+# FLASK
+# ===========================================
+instance/
+.flaskenv
+uploads/temp_*
+uploads/pred_*
+uploads/predicciones_*
+uploads/*_cleaned.csv
+uploads/*_processed.csv
+temp_results/
+
+# ===========================================
+# MODELOS Y METADATOS
+# ===========================================
+models/*.joblib
+models/*.pkl
+models/*.h5
+models/*_metadata.json
+!models/README.md
+!models/.gitkeep
+
+# ===========================================
+# LOGS Y CACHE
+# ===========================================
+*.log
+logs/
+.pytest_cache/
+.cache/
+htmlcov/
+.coverage
+.tox/
+
+# ===========================================
+# IDEs
+# ===========================================
+.vscode/
+.idea/
+
+# ===========================================
+# SISTEMA OPERATIVO
+# ===========================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ===========================================
+# BACKUP / TEMPORAL
+# ===========================================
+*.bak
+*.backup
+*~
+*.swp
+*.swo
+
+# ===========================================
+# DATOS DE USUARIO / UPLOADS
+# Ignorar todo el contenido subido por usuarios (CSVs, predicciones, archivos temporales)
+uploads/*
+!uploads/README.md
+!uploads/.gitkeep
+
+# ===========================================
+# MODELOS Y RESULTADOS TEMPORALES
+# Las salidas de entrenamiento y modelos binarios no deben versionarse aquí.
+temp_results/*
+!temp_results/README.md
+!temp_results/.gitkeep
+

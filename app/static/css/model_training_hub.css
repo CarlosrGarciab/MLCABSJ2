@@ -1,0 +1,458 @@
+/* Estilos para el Hub de Entrenamiento de Modelos */
+
+.section-title {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    border-bottom: 3px solid #e9ecef;
+    padding-bottom: 0.5rem;
+}
+
+.section-description {
+    color: #6c757d;
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+}
+
+.text-purple {
+    color: #6f42c1 !important;
+}
+
+/* Card de información de datos */
+.data-info-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.data-info-card h5 {
+    margin-bottom: 1rem;
+}
+
+.data-info-card .btn-outline-info {
+    color: white;
+    border-color: white;
+}
+
+.data-info-card .btn-outline-info:hover {
+    background-color: white;
+    color: #667eea;
+}
+
+/* Sección de modelos */
+.model-section {
+    background-color: #f8f9fa;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+    border-left: 4px solid #007bff;
+}
+
+.model-section:nth-child(even) {
+    border-left-color: #28a745;
+}
+
+.model-section:nth-child(3) {
+    border-left-color: #6f42c1;
+}
+
+.model-section:nth-child(4) {
+    border-left-color: #17a2b8;
+}
+
+/* Cards de modelos */
+.model-card {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e9ecef;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.model-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.model-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.model-header h4 {
+    margin-bottom: 0.5rem;
+}
+
+.model-header p {
+    color: #6c757d;
+    margin-bottom: 0;
+}
+
+/* Opciones de motores */
+.model-engines h6 {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.engine-option {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: background-color 0.2s ease;
+}
+
+.engine-option:hover {
+    background-color: #e9ecef;
+}
+
+.engine-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.engine-header i {
+    font-size: 1.5rem;
+    margin-right: 0.75rem;
+}
+
+.engine-header strong {
+    color: #495057;
+}
+
+/* Tags de algoritmos */
+.algorithms {
+    margin-bottom: 1rem;
+}
+
+.algorithm-tag {
+    display: inline-block;
+    background-color: #e3f2fd;
+    color: #1976d2;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.85rem;
+    margin: 0.125rem;
+    border: 1px solid #bbdefb;
+}
+
+.algorithm-tag:nth-child(2n) {
+    background-color: #e8f5e8;
+    color: #2e7d32;
+    border-color: #c8e6c9;
+}
+
+.algorithm-tag:nth-child(3n) {
+    background-color: #fff3e0;
+    color: #f57c00;
+    border-color: #ffcc02;
+}
+
+.algorithm-tag:nth-child(4n) {
+    background-color: #fce4ec;
+    color: #c2185b;
+    border-color: #f8bbd9;
+}
+
+/* Cards de características */
+.feature-card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 0.375rem;
+    padding: 1.5rem;
+    height: 100%;
+    transition: transform 0.2s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.feature-card h5 {
+    margin-bottom: 1rem;
+    color: #495057;
+}
+
+.feature-card p {
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+/* Botones específicos */
+.btn-sm {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+    border: none;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #4a9429 0%, #96d4b5 100%);
+}
+
+.btn-info {
+    background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+    border: none;
+}
+
+.btn-info:hover {
+    background: linear-gradient(135deg, #5fa8ff 0%, #0770c7 100%);
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
+    border: none;
+}
+
+.btn-warning:hover {
+    background: linear-gradient(135deg, #fcbf5a 0%, #dc5f42 100%);
+}
+
+/* Estados de disponibilidad */
+.engine-option.disabled {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.engine-option.disabled .btn {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .model-section {
+        padding: 1rem;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+    }
+    
+    .engine-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .engine-header i {
+        margin-bottom: 0.5rem;
+    }
+    
+    .algorithms {
+        text-align: center;
+    }
+    
+    .btn-sm {
+        width: 100%;
+    }
+}
+
+/* Animaciones */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.model-card,
+.feature-card {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.model-card:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.feature-card:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+/* Loading states */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.loading-spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 0.3rem solid rgba(255, 255, 255, 0.3);
+    border-top: 0.3rem solid #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Estilos personalizados para tooltips explicativos */
+.tooltip {
+    z-index: 10000;
+}
+
+.tooltip .tooltip-inner {
+    max-width: 350px;
+    text-align: left;
+    background-color: #2c3e50;
+    color: #ecf0f1;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.3);
+}
+
+.tooltip .tooltip-arrow {
+    border-top-color: #2c3e50 !important;
+}
+
+.tooltip.bs-tooltip-right .tooltip-arrow {
+    border-right-color: #2c3e50 !important;
+}
+
+.tooltip.bs-tooltip-left .tooltip-arrow {
+    border-left-color: #2c3e50 !important;
+}
+
+.tooltip.bs-tooltip-bottom .tooltip-arrow {
+    border-bottom-color: #2c3e50 !important;
+}
+
+/* Iconos de información en métricas */
+.metric-label .fa-info-circle,
+.summary-label .fa-info-circle {
+    opacity: 0.7;
+    transition: all 0.2s ease;
+}
+
+.metric-label .fa-info-circle:hover,
+.summary-label .fa-info-circle:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    color: #17a2b8 !important;
+}
+
+/* Asegurar que los tooltips sean legibles */
+.tooltip-inner strong {
+    color: #3498db;
+    font-weight: 600;
+}
+
+.tooltip-inner ul {
+    margin: 0.5rem 0;
+    padding-left: 1rem;
+}
+
+.tooltip-inner li {
+    margin-bottom: 0.2rem;
+}
+
+/* Contenedor con scroll para características */
+.features-scroll-container {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 10px;
+    margin-right: -10px;
+}
+
+/* Estilo personalizado para la barra de scroll */
+.features-scroll-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.features-scroll-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.features-scroll-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+    transition: background 0.2s ease;
+}
+
+.features-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* Mejorar el espaciado de los badges dentro del scroll */
+.features-scroll-container .badge {
+    margin-right: 0.25rem;
+    margin-bottom: 0.25rem;
+    display: inline-block;
+}
+
+/* Estilos para las tarjetas de métricas */
+.metric-card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.metric-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+}
+
+.metric-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #6c757d;
+    line-height: 1.3;
+    margin: 0;
+    padding: 0;
+}
+
+/* Asegurar que el texto esté centrado correctamente */
+.metric-label.text-center {
+    text-align: center !important;
+    display: block;
+    width: 100%;
+}

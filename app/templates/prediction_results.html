@@ -1,0 +1,628 @@
+{% extends "base.html" %}
+
+{% block title %}Resultados de Predicción{% endblock %}
+
+{% block styles %}
+<style>
+    .results-header {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stats-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+        border-left: 5px solid #28a745;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 1rem;
+        border: 1px solid #e9ecef;
+        border-radius: 0.375rem;
+        background: #f8f9fa;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #28a745;
+        display: block;
+    }
+    
+    .stat-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    
+    .preview-table {
+        font-size: 0.875rem;
+    }
+    
+    .scrollable-table {
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+    }
+    
+    .scrollable-table table {
+        margin-bottom: 0;
+    }
+    
+    .scrollable-table thead {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 10;
+    }
+    
+    .prediction-column {
+        font-weight: bold;
+    }
+    
+    .confidence-column {
+        background: #e3f2fd !important;
+    }
+    
+    .download-section {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .process-info {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+    }
+    
+    .prediction-distribution {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .distribution-bar {
+        height: 20px;
+        border-radius: 10px;
+        margin-bottom: 0.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .distribution-fill {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.5s ease;
+    }
+    
+    .distribution-label {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.75rem;
+        font-weight: bold;
+        color: white;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    }
+    
+
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+    
+    .prediction-legend {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+    
+    .legend-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    .prediction-badge {
+        display: inline-flex;
+        min-width: 40px;
+        min-height: 40px;
+        border-radius: 50%;
+        color: white;
+        font-weight: bold;
+        font-size: 0.9rem;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        padding: 0.3rem;
+        text-align: center;
+        line-height: 1.1;
+        word-wrap: break-word;
+        box-sizing: border-box;
+    }
+    
+    .prediction-0 {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+    
+    .prediction-1 {
+        background: linear-gradient(135deg, #28a745, #20c997);
+    }
+    
+    .prediction-2 {
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+    }
+    
+    .pred-cell-positive {
+        background: #d4edda !important;
+        color: #155724 !important;
+        font-weight: bold;
+    }
+    
+    .pred-cell-negative {
+        background: #f8d7da !important;
+        color: #721c24 !important;
+        font-weight: bold;
+    }
+    
+    .pred-cell-neutral {
+        background: #e2e3e5 !important;
+        color: #383d41 !important;
+        font-weight: bold;
+    }
+    
+    .pred-cell-warning {
+        background: #fff3cd !important;
+        color: #856404 !important;
+        font-weight: bold;
+    }
+    
+    .pred-cell-info {
+        background: #d1ecf1 !important;
+        color: #0c5460 !important;
+        font-weight: bold;
+    }
+    
+    .pred-cell-default {
+        background: #f8f9fa !important;
+        color: #495057 !important;
+        font-weight: bold;
+    }
+    
+    .table-highlight {
+        animation: fadeIn 0.5s ease-in;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="results-header">
+        <div class="row align-items-center">
+            <div class="col-md-12">
+                <h1>Predicciones Completadas</h1>
+                <p class="mb-0">Las predicciones se han generado exitosamente usando el modelo <strong>{{ results_info.model_name }}</strong></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Estadísticas de Resultados -->
+    <div class="stats-card">
+        <h5 class="mb-3">Resumen de Predicciones</h5>
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <span class="stat-number">{{ results_info.stats.total_predictions }}</span>
+                    <div class="stat-label">Total de Predicciones</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <span class="stat-number">{{ results_info.stats.unique_predictions }}</span>
+                    <div class="stat-label">Valores Únicos</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <span class="stat-number">{{ results_info.stats.features_used }}</span>
+                    <div class="stat-label">Características Usadas</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    {% if results_info.stats.avg_confidence %}
+                    <span class="stat-number">{{ results_info.stats.avg_confidence }}%</span>
+                    <div class="stat-label">Confianza Promedio</div>
+                    {% else %}
+                    <span class="stat-number">N/A</span>
+                    <div class="stat-label">Confianza</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Interpretación de Predicciones -->
+    {% if results_info.stats.task_type == 'classification' %}
+    <div class="prediction-legend">
+        <h5>¿Qué significan las predicciones?</h5>
+        
+        {% if results_info.stats.class_mapping %}
+        {% set class_keys = results_info.stats.class_mapping.keys() | list %}
+        {% set class_values = results_info.stats.class_mapping.values() | list %}
+        
+        <!-- Información general del target -->
+        <p class="text-muted mb-3">
+            <strong>Target:</strong> {{ results_info.stats.target_column }} - 
+            <em>Este modelo predice el valor de "{{ results_info.stats.target_column }}" para cada caso.</em>
+        </p>
+        
+        <!-- Información específica según el tipo de target detectado -->
+        {% if results_info.stats.target_type == 'numeric' %}
+        <div class="alert alert-info">
+            <strong>Tipo:</strong> Variable numérica
+            {% if results_info.stats.target_range %}
+            <br><strong>Rango de valores:</strong> {{ results_info.stats.target_range.min }} a {{ results_info.stats.target_range.max }}
+            {% if results_info.stats.target_range.is_integer %}
+            (valores enteros)
+            {% endif %}
+            {% endif %}
+            <br><strong>Interpretación:</strong> Cada predicción es un valor numérico específico de "{{ results_info.stats.target_column }}".
+        </div>
+        {% elif results_info.stats.target_type == 'categorical' %}
+        <div class="alert alert-success">
+            <strong>Tipo:</strong> Variable categórica
+            <br><strong>Categorías:</strong> {{ class_keys | length }} categorías distintas
+            <br><strong>Interpretación:</strong> Cada predicción clasifica el caso en una categoría específica.
+        </div>
+        {% else %}
+        <div class="alert alert-secondary">
+            <strong>Tipo:</strong> Variable de clasificación
+            <br><strong>Categorías:</strong> {{ class_keys | length }} valores distintos
+        </div>
+        {% endif %}
+        
+        {% if class_keys | length <= 5 %}
+        <!-- Para pocas clases, mostrar cada una individualmente -->
+        <div class="row">
+            {% for class_num, class_name in results_info.stats.class_mapping.items() %}
+            <div class="col-md-{{ 12 // results_info.stats.class_mapping|length if results_info.stats.class_mapping|length <= 3 else 4 }}">
+                <div class="legend-item">
+                    <div class="prediction-badge prediction-{{ class_num }}">{{ class_name }}</div>
+                    <div>
+                        <strong>{{ class_name }}</strong><br>
+                        <span class="text-muted small">Índice: {{ class_num }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        {% elif class_keys | length <= 20 %}
+        <!-- Para cantidad media de clases, mostrar información resumida -->
+        <div class="alert alert-warning">
+            <strong>Valores posibles:</strong> {{ class_values | sort | join(', ') }}
+        </div>
+        
+        {% else %}
+        <!-- Para muchas clases, mostrar solo estadísticas -->
+        <div class="alert alert-warning">
+            <strong>Gran cantidad de categorías:</strong> El modelo puede predecir {{ class_keys | length }} valores diferentes.
+            <br><strong>Muestra de valores:</strong> {{ (class_values | sort)[:10] | join(', ') }}{% if class_keys | length > 10 %}, ...{% endif %}
+        </div>
+        {% endif %}
+        
+        {% if results_info.stats.prediction_distribution %}
+        <div class="mt-3">
+            <h6>Distribución de Predicciones:</h6>
+            <div class="row">
+                {% for class_name, count in results_info.stats.prediction_distribution.items() %}
+                {% if loop.index <= 6 %}
+                <div class="col-md-2">
+                    <div class="text-center">
+                        <span class="stat-number text-primary">{{ count }}</span>
+                        <div class="stat-label">{{ class_name }}</div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+                {% if results_info.stats.prediction_distribution|length > 6 %}
+                <div class="col-12 mt-2">
+                    <small class="text-muted">... y {{ results_info.stats.prediction_distribution|length - 6 }} categorías más</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <!-- Fallback para modelos sin mapeo de clases -->
+        <p class="text-muted mb-3">
+            <strong>Target:</strong> {{ results_info.stats.target_column }} - 
+            <em>Este modelo predice valores para "{{ results_info.stats.target_column }}".</em>
+        </p>
+        
+        <div class="alert alert-secondary">
+            <strong>Información:</strong> El modelo genera predicciones numéricas. Consulta el archivo descargado para ver los resultados detallados.
+        </div>
+        {% endif %}
+        
+        <div class="mt-3">
+            <small class="text-info">
+                <strong>Nivel de Confianza:</strong> Indica qué tan seguro está el modelo de su predicción. 
+                Mayor porcentaje = mayor certeza en el resultado.
+            </small>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Información del Proceso -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="process-info">
+                <h6>Información del Proceso</h6>
+                <ul class="list-unstyled mb-0">
+                    <li><strong>Archivo original:</strong> {{ results_info.original_filename }}</li>
+                    <li><strong>Modelo usado:</strong> {{ results_info.model_name }}</li>
+                    <li><strong>Tipo de modelo:</strong> {{ results_info.stats.model_type|title|replace('_', ' ') }}</li>
+                    <li><strong>Tipo de tarea:</strong> {{ results_info.stats.task_type|title }}</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <!-- Distribución de predicciones -->
+            {% if results_info.stats.task_type == 'classification' and results_preview.data %}
+            <div class="prediction-distribution">
+                <h6>Distribución de Predicciones</h6>
+                {% set prediction_counts = {} %}
+                {% for row in results_preview.data %}
+                    {% if row[results_preview.columns.index('Prediccion')] %}
+                        {% set pred_value = row[results_preview.columns.index('Prediccion')] %}
+                        {% if pred_value in prediction_counts %}
+                            {% set _ = prediction_counts.update({pred_value: prediction_counts[pred_value] + 1}) %}
+                        {% else %}
+                            {% set _ = prediction_counts.update({pred_value: 1}) %}
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                
+                {% if prediction_counts %}
+                    {% set total_preview = results_preview.data|length %}
+                    {% for pred_value, count in prediction_counts.items() %}
+                        {% set percentage = (count / total_preview * 100)|round(1) %}
+                        <div class="distribution-bar" style="background-color: #e9ecef;">
+                            <div class="distribution-fill" 
+                                 style="width: {{ percentage }}%; background-color: hsl({{ loop.index0 * 360 / prediction_counts|length }}, 70%, 60%);">
+                            </div>
+                            <div class="distribution-label">{{ pred_value }}: {{ count }} ({{ percentage }}%)</div>
+                        </div>
+                    {% endfor %}
+                    <small class="text-muted">Basado en las primeras {{ total_preview }} predicciones</small>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Vista previa de resultados -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Vista Previa de Resultados</h5>
+        </div>
+        <div class="card-body">
+            {% if results_preview.data %}
+            <div class="scrollable-table">
+                <table class="table table-sm preview-table table-hover table-highlight">
+                    <thead class="table-light">
+                        <tr>
+                            {% for col in results_preview.columns %}
+                            <th class="{% if col == 'Prediccion' %}prediction-column{% elif col == 'Confianza' or col.startswith('Prob_') %}confidence-column{% endif %}">
+                                {{ col }}
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in results_preview.data %}
+                        <tr>
+                            {% for cell in row %}
+                            {% set is_prediction = loop.index == results_preview.columns.index('Prediccion') + 1 %}
+                            {% set is_confidence = results_preview.columns[loop.index0] == 'Confianza' or results_preview.columns[loop.index0].startswith('Prob_') %}
+                            
+                            {% set cell_lower = cell|string|lower %}
+                            {% set prediction_class = 'pred-cell-default' %}
+                            
+                            {% if is_prediction %}
+                                {% if cell_lower in ['si', 'sí', 'yes', 'true', 'positivo', 'aprobado', 'excelente', 'bueno', 'male'] %}
+                                    {% set prediction_class = 'pred-cell-positive' %}
+                                {% elif cell_lower in ['no', 'false', 'negativo', 'reprobado', 'malo', 'deficiente', 'female'] %}
+                                    {% set prediction_class = 'pred-cell-negative' %}
+                                {% elif cell_lower in ['unknown', 'desconocido', 'neutro', 'regular'] %}
+                                    {% set prediction_class = 'pred-cell-neutral' %}
+                                {% elif cell_lower.replace('.', '').replace('-', '').isdigit() %}
+                                    {% set cell_num = cell_lower|float %}
+                                    {% if cell_num == 0 %}
+                                        {% set prediction_class = 'pred-cell-negative' %}
+                                    {% elif cell_num == 1 %}
+                                        {% set prediction_class = 'pred-cell-positive' %}
+                                    {% elif cell_num >= 2 and cell_num <= 5 %}
+                                        {% set prediction_class = 'pred-cell-warning' %}
+                                    {% elif cell_num >= 6 and cell_num <= 10 %}
+                                        {% set prediction_class = 'pred-cell-info' %}
+                                    {% else %}
+                                        {% set prediction_class = 'pred-cell-default' %}
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
+                            
+                            <td class="{% if is_prediction %}prediction-column {{ prediction_class }}{% elif is_confidence %}confidence-column{% endif %}">
+                                {% if is_confidence %}
+                                    {{ cell }}%
+                                {% elif is_prediction %}
+                                    {{ cell }}
+                                {% else %}
+                                    {{ cell|string|truncate(50) }}
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <small class="text-muted">
+                Mostrando todas las {{ results_preview.total_rows }} filas de resultados (con scroll vertical).
+            </small>
+            {% else %}
+            <div class="text-center text-muted">
+
+                <p>No se pudo generar una vista previa de los resultados.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Sección de descarga -->
+    <div class="download-section">
+
+        <h4>Descargar Resultados Completos</h4>
+        <p class="mb-4">
+            Obtén el archivo CSV completo con todas las {{ results_info.stats.total_predictions }} predicciones, 
+            incluyendo niveles de confianza y datos originales.
+        </p>
+        
+        <a href="{{ url_for('prediction.download_predictions') }}" class="btn btn-light btn-lg">
+            {{ results_info.results_filename }}
+        </a>
+    </div>
+
+    
+    <!-- Botones de acción -->
+    <div class="action-buttons">
+        <a href="{{ url_for('prediction.predict_with_model', model_name=results_info.model_name) }}" class="btn btn-primary btn-lg">
+            Predecir Otro Archivo
+        </a>
+        
+        <a href="{{ url_for('prediction.saved_models') }}" class="btn btn-success btn-lg">
+            Ver Otros Modelos
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animación para las barras de distribución
+    setTimeout(function() {
+        document.querySelectorAll('.distribution-fill').forEach(function(bar) {
+            bar.style.width = bar.style.width; // Trigger animation
+        });
+    }, 500);
+    
+    // Efecto hover en filas de tabla
+    document.querySelectorAll('.preview-table tbody tr').forEach(function(row) {
+        row.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = '#f8f9fa';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+        });
+    });
+    
+    // Highlight especial para columnas de predicción
+    document.querySelectorAll('.prediction-column').forEach(function(cell) {
+        cell.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = '#d4edda';
+        });
+        
+        cell.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '#e7f7e7';
+        });
+    });
+    
+    // Estadísticas animadas
+    document.querySelectorAll('.stat-number').forEach(function(stat) {
+        const finalValue = parseInt(stat.textContent.replace(/[^\d.]/g, ''));
+        let currentValue = 0;
+        const increment = finalValue / 50;
+        const timer = setInterval(function() {
+            currentValue += increment;
+            if (currentValue >= finalValue) {
+                currentValue = finalValue;
+                clearInterval(timer);
+            }
+            stat.textContent = Math.floor(currentValue) + (stat.textContent.includes('%') ? '%' : '');
+        }, 20);
+    });
+    
+    // Confirmación para descarga
+    document.querySelector('a[href*="download_predictions"]').addEventListener('click', function() {
+        // Pequeño delay para mostrar feedback visual
+        this.innerHTML = 'Preparando descarga...';
+        setTimeout(() => {
+            this.innerHTML = '{{ results_info.results_filename }}';
+        }, 2000);
+    });
+    
+    // Ajustar tamaño de badges según el texto
+    document.querySelectorAll('.prediction-badge').forEach(badge => {
+        const text = badge.textContent.trim();
+        const textLength = text.length;
+        
+        // Calcular tamaño basado en la longitud del texto
+        let size;
+        if (textLength <= 2) {
+            size = 40; // Tamaño mínimo para textos muy cortos
+        } else if (textLength <= 5) {
+            size = 50; // Tamaño mediano
+        } else if (textLength <= 8) {
+            size = 60; // Tamaño grande
+        } else {
+            size = Math.min(70 + (textLength - 8) * 3, 100); // Máximo 100px
+        }
+        
+        // Aplicar el tamaño
+        badge.style.width = size + 'px';
+        badge.style.height = size + 'px';
+        
+        // Ajustar font-size según el tamaño
+        const fontSize = Math.max(0.6, Math.min(1.0, 40 / size)) + 'rem';
+        badge.style.fontSize = fontSize;
+    });
+});
+</script>
+{% endblock %}

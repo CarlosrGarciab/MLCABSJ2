@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}Regresión con scikit-learn{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/train_model.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header Principal -->
+    <div class="page-header">
+        <h2>
+            Regresión con scikit-learn
+        </h2>
+        <p class="lead mb-0">Entrena modelos para predecir valores numéricos continuos</p>
+    </div>
+
+    <!-- Verificar que hay datos cargados -->
+    {% if not session.get('data_file') %}
+    <div class="info-card mb-4">
+        <div class="card-header warning-header">
+            <h5 class="mb-0">
+                No hay datos cargados
+            </h5>
+        </div>
+        <div class="card-body text-center">
+            <p>Primero debes cargar y procesar un archivo CSV.</p>
+            <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+                Cargar Datos
+            </a>
+        </div>
+    </div>
+    {% else %}
+
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Información de los datos cargados -->
+            <div class="info-card mb-4">
+                <div class="card-header primary-header">
+                    <h5 class="mb-0">
+                        Datos Preparados para Regresión
+                    </h5>
+                </div>
+                <div class="card-body dataset-info">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Información del Dataset:</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Archivo:</strong> <span class="text-muted">{{ filename or 'N/A' }}</span></li>
+                                <li><strong>Filas:</strong> <span class="badge bg-light">{{ data_shape[0] if data_shape else 0 }}</span></li>
+                                <li><strong>Columnas:</strong> <span class="badge bg-light">{{ data_shape[1] if data_shape else 0 }}</span></li>
+                                <li><strong>Variable target:</strong> <span class="badge bg-primary">{{ target_column or 'No seleccionado' }}</span></li>
+                                <li><strong>Características:</strong> <span class="badge bg-light">{{ predictor_columns|length }}</span></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Características (Predictores):</h6>
+                            <div class="features-scroll-container mb-3">
+                                <div class="badges-container">
+                                    {% for col in predictor_columns %}
+                                        <span class="badge bg-secondary">{{ col }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <h6>Tipo de Análisis:</h6>
+                            <p class="text-muted">Regresión - Predicción de valores numéricos continuos</p>
+                            
+                            <div class="alert alert-info-compact">
+                                <small>Asegúrate de que tu variable target sea numérica para obtener mejores resultados.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulario de entrenamiento -->
+            <div class="info-card mb-4">
+                <div class="card-header success-header">
+                    <h5 class="mb-0">
+                        Configuración del Modelo de Regresión
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('training.train_regression') }}" id="regressionForm">
+                        <!-- Campos hidden para target y features -->
+                        <input type="hidden" name="target_column" value="{{ target_column }}">
+                        {% for column in predictor_columns %}
+                        <input type="hidden" name="feature_columns" value="{{ column }}">
+                        {% endfor %}
+                        
+                        <!-- Selección del modelo -->
+                        <div class="mb-4">
+                            <label class="form-label"><strong>Selecciona el Tipo de Modelo de Regresión:</strong></label>
+                            <div class="row">
+                                {% for model_key, model_info in models_info.items() %}
+                                    <div class="col-md-6 col-lg-4 mb-3">
+                                        <div class="model-card">
+                                            <div class="card-body">
+                                                <input type="radio" name="model_type" value="{{ model_key }}" 
+                                                       id="model_{{ model_key }}" class="model-radio">
+                                                <label for="model_{{ model_key }}">
+                                                    <h6 class="card-title">{{ model_info.name }}</h6>
+                                                    <p class="card-text">{{ model_info.description }}</p>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Configuración general -->
+                        <div class="config-section mb-4">
+                            <h6>
+                                Configuración General:
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="test_size" class="form-label">Tamaño del conjunto de prueba:</label>
+                                    <select name="test_size" id="test_size" class="form-select">
+                                        <option value="10">10% (más datos para entrenar)</option>
+                                        <option value="20" selected>20% (recomendado)</option>
+                                        <option value="30">30% (más datos para evaluar)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="random_state" class="form-label">Semilla aleatoria:</label>
+                                    <input type="number" class="form-control" id="random_state" name="random_state" 
+                                           value="42" min="1" max="9999">
+                                    <div class="form-text">Para reproducibilidad de resultados</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Parámetros específicos por modelo (se mostrarán dinámicamente) -->
+                        {% for model_key, model_info in models_info.items() %}
+                            <div id="params_{{ model_key }}" class="model-params" style="display: none;">
+                                <h6>
+                                    Parámetros para {{ model_info.name }}:
+                                </h6>
+                                <div class="row">
+                                    {% for param_name, param_options in model_info.params.items() %}
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ model_key }}_{{ param_name }}" class="form-label">
+                                                {{ param_name.replace('_', ' ').title() }}:
+                                            </label>
+                                            <select name="{{ param_name }}" 
+                                                    id="{{ model_key }}_{{ param_name }}" 
+                                                    class="form-select">
+                                                {% for option in param_options %}
+                                                    <option value="{{ option }}" 
+                                                            {% if loop.index == 1 %}selected{% endif %}>
+                                                        {{ option }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                        
+                        <!-- Botones de acción -->
+                        <div class="d-grid gap-2 d-md-flex align-items-center justify-content-between">
+                            <a href="{{ url_for('training.training') }}" class="btn btn-outline-secondary" style="margin-left:0;">
+                                Volver al Hub
+                            </a>
+                            <div class="d-flex align-items-center" style="gap: 0.5rem;">
+                                <button type="submit" class="btn btn-success" id="trainButton" disabled>
+                                    Entrenar Modelo de Regresión
+                                </button>
+                                <div id="loadingDiv" class="text-center" style="display: none;">
+                                    <div class="spinner-border text-success" role="status">
+                                        <span class="visually-hidden">Entrenando...</span>
+                                    </div>
+                                    <span class="ms-2">Entrenando modelo...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- ...Otras Opciones section removed... -->
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modelRadios = document.querySelectorAll('.model-radio');
+    const modelCards = document.querySelectorAll('.model-card');
+    const trainButton = document.getElementById('trainButton');
+    const loadingDiv = document.getElementById('loadingDiv');
+    const form = document.getElementById('regressionForm');
+
+    // Manejar selección de modelo
+    modelRadios.forEach(function(radio, index) {
+        radio.addEventListener('change', function() {
+            // Remover selección de todas las tarjetas
+            modelCards.forEach(function(card) {
+                card.classList.remove('selected');
+            });
+            
+            // Ocultar todos los parámetros
+            document.querySelectorAll('.model-params').forEach(function(params) {
+                params.style.display = 'none';
+            });
+            
+            if (this.checked) {
+                // Marcar la tarjeta seleccionada
+                modelCards[index].classList.add('selected');
+                
+                // Mostrar parámetros del modelo seleccionado
+                const modelType = this.value;
+                const paramsDiv = document.getElementById('params_' + modelType);
+                if (paramsDiv) {
+                    paramsDiv.style.display = 'block';
+                }
+                
+                // Habilitar botón de entrenar
+                trainButton.disabled = false;
+            }
+        });
+    });
+
+    // Manejar click en las tarjetas
+    modelCards.forEach(function(card, index) {
+        card.addEventListener('click', function() {
+            modelRadios[index].checked = true;
+            modelRadios[index].dispatchEvent(new Event('change'));
+        });
+    });
+
+    // Manejar envío del formulario
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const selectedModel = document.querySelector('.model-radio:checked');
+        if (!selectedModel) {
+            alert('Por favor selecciona un tipo de modelo');
+            return;
+        }
+        
+        // Mostrar loading y deshabilitar botón
+        trainButton.style.display = 'none';
+        loadingDiv.style.display = 'block';
+        
+        // Enviar formulario
+        this.submit();
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

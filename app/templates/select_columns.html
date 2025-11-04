@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Selección de Columnas{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/select_columns.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header principal -->
+    <div class="page-header">
+        <h3>Configurar Columnas para Análisis</h3>
+        <p><i class="fas fa-file-csv"></i> Archivo: <strong>{{ filename }}</strong></p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="main-card">
+                <div class="card-body">
+                    <!-- Vista previa del archivo -->
+                    <div class="preview-section mb-4">
+                        <h5>Vista Previa de los Datos</h5>
+                        
+                        <!-- Alertas de validación básica eliminadas por solicitud del usuario -->
+                        
+                        <!-- Tabla de vista previa -->
+                        {% if preview_data %}
+                        <div style="overflow-x:auto; max-width:100%;">
+                            <table class="table table-striped table-hover" style="min-width:600px;">
+                                <thead class="table-dark">
+                                    <tr>
+                                    {% for column in preview_data.columns %}
+                                        <th>{{ column }}</th>
+                                    {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in preview_data.data %}
+                                        <tr>
+                                            {% for cell in row %}
+                                                <td>{{ cell if cell is not none else "N/A" }}</td>
+                                            {% endfor %}
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Información básica del dataset -->
+                    {% if validation_results %}
+                    <div class="dataset-info-card">
+                        <h6><i class="fas fa-database"></i> Información Básica del Dataset</h6>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <strong>Total de filas:</strong> {{ validation_results.total_rows }}
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Total de columnas:</strong> {{ validation_results.total_columns }}
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Filas duplicadas:</strong> {{ validation_results.duplicates or 0 }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Formulario de selección de columnas -->
+                    <form method="POST" id="columnForm">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <!-- Columna Target -->
+                            <div class="col-md-6">
+                                <div class="column-selection-card target-card">
+                                    <div class="card-header target-header">
+                                        <h5>
+                                            {{ form.target_column.label.text }}
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <small class="text-muted d-block mb-3">
+                                            Selecciona la columna que quieres predecir (variable dependiente)
+                                        </small>
+                                        {{ form.target_column(class="form-select form-select-lg", id="target_column") }}
+                                        {% if form.target_column.errors %}
+                                            <div class="text-danger mt-2">
+                                                {% for error in form.target_column.errors %}
+                                                    <small>{{ error }}</small>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <!-- Información de la columna target seleccionada -->
+                                        <div id="target-info" class="mt-3" style="display: none;">
+                                            <div class="card bg-light">
+                                                <div class="card-body p-2">
+                                                    <small class="text-muted">
+                                                        <strong>Información de la columna:</strong>
+                                                        <div id="target-details"></div>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Análisis de compatibilidad de modelos -->
+                                        <div id="model-compatibility" class="mt-3" style="display: none;">
+                                            <h6>Compatibilidad con Modelos</h6>
+                                            
+                                            <!-- Mensaje de clasificación -->
+                                            <div id="classification-compatibility" class="mb-2" style="display: none;">
+                                                <div class="alert py-2 px-3" id="classification-alert">
+                                                    <small id="classification-message"></small>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Mensaje de regresión -->
+                                            <div id="regression-compatibility" class="mb-2" style="display: none;">
+                                                <div class="alert py-2 px-3" id="regression-alert">
+                                                    <small id="regression-message"></small>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Recomendación principal -->
+                                            <div id="primary-recommendation" class="mt-2" style="display: none;">
+                                                <div class="alert alert-primary py-2 px-3">
+                                                    <small>
+                                                        <strong>Recomendación:</strong> 
+                                                        <span id="recommendation-text"></span>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Columnas Predictoras -->
+                            <div class="col-md-6">
+                                <div class="column-selection-card predictor-card">
+                                    <div class="card-header predictor-header">
+                                        <h5>
+                                            {{ form.predictor_columns.label.text }}
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <small class="text-muted d-block mb-3">
+                                            Selecciona las columnas que usarás para hacer predicciones (variables independientes)
+                                        </small>
+                                        
+                                        <!-- Botones de control -->
+                                        <div class="btn-group w-100 mb-3" role="group">
+                                            <button type="button" class="btn btn-outline-success btn-sm" id="selectAll">
+                                                Seleccionar Todo
+                                            </button>
+                                            <button type="button" class="btn btn-outline-warning btn-sm" id="deselectAll">
+                                                Deseleccionar Todo
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- Lista de checkboxes para columnas predictoras -->
+                                        <div class="predictor-checkboxes" style="max-height: 300px; overflow-y: auto; border: 1px solid #ced4da; border-radius: 0.375rem; padding: 0.5rem;">
+                                            {% for choice in form.predictor_columns.choices %}
+                                            <div class="form-check predictor-item" data-column="{{ choice[0] }}">
+                                                <input class="form-check-input predictor-checkbox" type="checkbox" 
+                                                       name="predictor_columns" value="{{ choice[0] }}" id="pred_{{ choice[0] }}">
+                                                <label class="form-check-label w-100" for="pred_{{ choice[0] }}">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <span class="column-name">{{ choice[1] }}</span>
+                                                        <span class="column-type badge bg-secondary">
+                                                            {% if choice[0] in numeric_columns %}
+                                                                Numérica
+                                                            {% else %}
+                                                                Categórica
+                                                            {% endif %}
+                                                        </span>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        
+                                        <small class="text-muted mt-2 d-block">
+                                            Haz clic en cada elemento para seleccionar/deseleccionar
+                                        </small>
+                                        
+                                        {% if form.predictor_columns.errors %}
+                                            <div class="text-danger mt-2">
+                                                {% for error in form.predictor_columns.errors %}
+                                                    <small>{{ error }}</small>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <!-- Contador de columnas seleccionadas -->
+                                        <div class="mt-3">
+                                            <span class="badge bg-info" id="selected-count">0 columnas seleccionadas</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+
+                        
+                        <!-- Botones de acción mejorados -->
+                        <div class="actions-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary">
+                                            Volver al Inicio
+                                        </a>
+                                    </div>
+                                    <div class="text-center">
+                                    </div>
+                                    <div>
+                                        <button type="submit" class="btn btn-primary btn-lg" id="processBtn" disabled>
+                                            Procesar Datos
+                                            <span class="spinner-border spinner-border-sm ms-2" style="display: none;" id="loadingSpinner"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Resumen de selección -->
+                                <div class="mt-3" id="selection-summary" style="display: none;">
+                                    <div class="alert alert-info">
+                                        <h6>Resumen de Configuración:</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <strong>Variable Target:</strong> <span id="target-summary">No seleccionada</span>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <strong>Variables Predictoras:</strong> <span id="predictors-summary">0 seleccionadas</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/select_columns.js') }}"></script>
+{% endblock %}

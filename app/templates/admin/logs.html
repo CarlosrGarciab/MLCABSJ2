@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+
+{% block title %}Logs del Sistema - Administración{% endblock %}
+
+{% block styles %}
+<style>
+.admin-navbar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 1rem 0;
+    margin-bottom: 2rem;
+    border-radius: 10px;
+    color: white;
+}
+
+.admin-navbar .navbar-brand {
+    color: white !important;
+    font-weight: 600;
+}
+
+.admin-navbar .nav-link {
+    color: rgba(255, 255, 255, 0.8) !important;
+    transition: color 0.3s ease;
+}
+
+.admin-navbar .nav-link:hover {
+    color: white !important;
+}
+
+.admin-navbar .btn-outline-light {
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+}
+
+.admin-navbar .btn-outline-light:hover {
+    background-color: white;
+    color: #667eea;
+}
+
+.log-viewer {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    font-family: 'Consolas', 'Monaco', monospace;
+    padding: 1rem;
+    border-radius: 8px;
+    max-height: 500px;
+    overflow-y: auto;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.log-line {
+    margin-bottom: 2px;
+    word-wrap: break-word;
+}
+
+.log-error {
+    color: #f14c4c;
+}
+
+.log-warning {
+    color: #ffa500;
+}
+
+.log-info {
+    color: #4fc3f7;
+}
+
+.log-debug {
+    color: #9e9e9e;
+}
+
+.admin-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+}
+
+.log-file-card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.log-file-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.btn-view-log {
+    background: linear-gradient(45deg, #4caf50, #45a049);
+    border: none;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.btn-view-log:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.log-stats {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.admin-navbar {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.admin-navbar .nav-link {
+    color: #667eea !important;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.admin-navbar .nav-link:hover {
+    color: #764ba2 !important;
+    transform: translateY(-1px);
+}
+
+.btn-logout {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+    border: none;
+    color: white;
+    border-radius: 20px;
+    padding: 8px 20px;
+    transition: all 0.3s ease;
+}
+
+.btn-logout:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Barra de navegación de administración -->
+<nav class="navbar navbar-expand-lg admin-navbar">
+    <div class="container-fluid">
+        <span class="navbar-brand">
+            Sesión de: <strong>{% if session.admin_username %}{{ session.admin_username }}{% else %}Admin{% endif %}</strong>
+        </span>
+        
+        <div class="navbar-nav ms-auto">
+            <a class="nav-link" href="{{ url_for('admin.view_logs') }}">
+                Logs
+            </a>
+            <a class="nav-link" href="{{ url_for('admin.system_status') }}">
+                Estado del Sistema
+            </a>
+            <a href="{{ url_for('admin_logout') }}" class="btn btn-logout ms-3">
+                Cerrar Sesión
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="admin-header text-center">
+        <h1>Panel de Administración</h1>
+        <p class="mb-0">Monitoreo de logs y actividad del sistema</p>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Archivos de Log</h4>
+                </div>
+                <div class="card-body">
+                    {% if log_files %}
+                        <div class="row">
+                            {% for log_file in log_files %}
+                            <div class="col-md-6 mb-3">
+                                <div class="log-file-card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            {{ log_file.name }}
+                                        </h6>
+                                        <div class="log-stats mb-3">
+                                            <small class="text-muted">
+                                                Tamaño: {{ (log_file.size / 1024) | round(2) }} KB<br>
+                                                Modificado: {{ log_file.modified[:19] | replace('T', ' ') }}
+                                            </small>
+                                        </div>
+                                        <button class="btn btn-view-log btn-sm" onclick="viewLog('{{ log_file.name }}')">
+                                            Ver Log
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <p class="text-muted">No se encontraron archivos de log</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Visor de Logs</h4>
+                    <div>
+                        <select id="lineCount" class="form-select form-select-sm d-inline-block" style="width: auto;">
+                            <option value="50">50 líneas</option>
+                            <option value="100" selected>100 líneas</option>
+                            <option value="200">200 líneas</option>
+                            <option value="500">500 líneas</option>
+                        </select>
+                        <button class="btn btn-outline-danger btn-sm ms-2" onclick="clearViewer()">
+                            Limpiar
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="logViewer" class="log-viewer">
+                        <div class="text-center text-muted py-4">
+                            Selecciona un archivo de log para ver su contenido
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="d-grid">
+                                <button class="btn btn-warning text-white" onclick="clearOldLogs()">
+                                    Limpiar Logs Antiguos
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-grid">
+                                <button class="btn btn-danger text-white" onclick="clearCurrentLogs()">
+                                    Limpiar Contenido de Logs Actuales
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function viewLog(filename) {
+    const lineCount = document.getElementById('lineCount').value;
+    const viewer = document.getElementById('logViewer');
+    
+    viewer.innerHTML = '<div class="text-center py-3">Cargando...</div>';
+    
+    fetch(`/admin/logs/${filename}?lines=${lineCount}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                viewer.innerHTML = `<div class="text-danger">Error: ${data.error}</div>`;
+                return;
+            }
+            
+            let content = `<div class="mb-2"><strong>${data.filename}</strong> - Mostrando ${data.showing_lines} de ${data.total_lines} líneas</div>`;
+            
+            data.lines.forEach(line => {
+                let className = 'log-line';
+                if (line.includes('ERROR')) className += ' log-error';
+                else if (line.includes('WARNING')) className += ' log-warning';
+                else if (line.includes('INFO')) className += ' log-info';
+                else if (line.includes('DEBUG')) className += ' log-debug';
+                
+                content += `<div class="${className}">${escapeHtml(line)}</div>`;
+            });
+            
+            viewer.innerHTML = content;
+            viewer.scrollTop = viewer.scrollHeight;
+        })
+        .catch(error => {
+            viewer.innerHTML = `<div class="text-danger">Error cargando log: ${error}</div>`;
+        });
+}
+
+function clearViewer() {
+    document.getElementById('logViewer').innerHTML = `
+        <div class="text-center text-muted py-4">
+            Selecciona un archivo de log para ver su contenido
+        </div>
+    `;
+}
+
+function clearOldLogs() {
+    const days = prompt('Eliminar logs anteriores a cuántos días? (default: 7)', '7');
+    if (!days) return;
+    
+    const formData = new FormData();
+    formData.append('days', days);
+    
+    fetch('/admin/clear_logs', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            alert(data.message);
+            location.reload();
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    });
+}
+
+function clearCurrentLogs() {
+    if (!confirm('¿Estás seguro de que quieres limpiar el contenido de todos los logs actuales? Esta acción no se puede deshacer.')) {
+        return;
+    }
+    
+    fetch('/admin/clear_current_logs', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            alert(data.message);
+            location.reload();
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    });
+}
+
+function refreshLogs() {
+    location.reload();
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio - Subir Archivo{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <h1>MLHub CABJS</h1>
+        <p>Sube tu archivo CSV, selecciona las columnas predictoras y la variable target, y entrena automáticamente modelos de clasificación, regresión y asociación.</p>
+    </div>
+
+    <div class="row">
+        <!-- Upload Section -->
+        <div class="col-md-12">
+            <div class="upload-card">
+                <div class="card-header">
+                    <h3 class="mb-0">Subir Archivo CSV</h3>
+                </div>
+                <div class="card-body">
+                        <form method="POST" enctype="multipart/form-data" id="csvForm">
+                            {{ form.hidden_tag() }}
+                            <div class="mb-3">
+                                {{ form.file.label(class="form-label") }}
+                                {{ form.file(class="form-control", id="csvFileInput", accept=".csv") }}
+                                <div class="form-text">Solo archivos CSV (máx. 16MB)</div>
+                                {% if form.file.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.file.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-cloud-upload-alt"></i> Subir y Configurar
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Vista previa dinámica -->
+                        <div id="previewSection" class="mt-4 d-none">
+                            <h5>Vista Previa</h5>
+                            <p class="text-muted">Mostrando las primeras 5 filas:</p>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped table-sm">
+                                    <thead class="table-dark" id="previewHeaders"></thead>
+                                    <tbody id="previewRows"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Section eliminada -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/csv_preview.js') }}"></script>
+{% endblock %}

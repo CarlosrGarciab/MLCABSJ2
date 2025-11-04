@@ -1,0 +1,400 @@
+{% extends "base.html" %}
+
+{% block title %}Validar Compatibilidad - {{ model_name }}{% endblock %}
+
+{% block styles %}
+<style>
+    .validation-header {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .compatibility-card {
+        border: 2px solid #e9ecef;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        background: white;
+    }
+    
+    .compatibility-card.success {
+        border-color: #28a745;
+        background: #f8fff9;
+    }
+    
+    .compatibility-card.warning {
+        border-color: #ffc107;
+        background: #fffbf0;
+    }
+    
+    .compatibility-card.error {
+        border-color: #dc3545;
+        background: #fff5f5;
+    }
+    
+    .status-icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    .status-success {
+        background: #28a745;
+        color: white;
+    }
+    
+    .status-warning {
+        background: #ffc107;
+        color: #212529;
+    }
+    
+    .status-error {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .columns-comparison {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+    }
+    
+    .column-list {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    
+    .column-item {
+        padding: 0.25rem 0.5rem;
+        margin: 0.125rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+        display: inline-block;
+    }
+    
+    .column-found {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .column-missing {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .preview-table {
+        font-size: 0.875rem;
+    }
+    
+    .execute-section {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    .warning-list {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .warning-item {
+        margin-bottom: 0.5rem;
+        padding-left: 1.5rem;
+        position: relative;
+    }
+    
+    .warning-item::before {
+        content: "⚠";
+        position: absolute;
+        left: 0;
+        color: #f39c12;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="validation-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1>Validación de Compatibilidad</h1>
+                <p class="mb-0">Verificando que tu archivo sea compatible con el modelo <strong>{{ model_name }}</strong></p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{{ url_for('prediction.predict_with_model', model_name=model_name) }}" class="btn btn-light">
+                    Cargar Otro Archivo
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Estado de Compatibilidad Principal -->
+    <div class="compatibility-card {% if compatibility.compatible %}success{% else %}error{% endif %}">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h4>
+                    <span class="status-icon {% if compatibility.compatible %}status-success{% else %}status-error{% endif %}">
+                        {% if compatibility.compatible %}
+
+                        {% else %}
+
+                        {% endif %}
+                    </span>
+                    Estado de Compatibilidad
+                </h4>
+                {% if compatibility.compatible %}
+                    <p class="mb-0 text-success">
+                        <strong>¡Archivo compatible!</strong> Todas las columnas requeridas están presentes.
+                    </p>
+                {% else %}
+                    <p class="mb-0 text-danger">
+                        <strong>Archivo incompatible.</strong> Faltan columnas requeridas por el modelo.
+                    </p>
+                {% endif %}
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="small text-muted">
+                    <strong>{{ filename }}</strong><br>
+                    {{ compatibility.total_rows }} filas, {{ compatibility.total_columns }} columnas
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Información del Archivo -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Tu Archivo</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Nombre:</strong> {{ filename }}</p>
+                    <p><strong>Filas:</strong> {{ compatibility.total_rows }}</p>
+                    <p><strong>Columnas:</strong> {{ compatibility.total_columns }}</p>
+                    
+                    {% if compatibility.min_rows_warning %}
+                    <div class="alert alert-warning">
+                        {{ compatibility.min_rows_warning }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Modelo Requerido</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Nombre:</strong> {{ model_name }}</p>
+                    <p><strong>Tipo:</strong> {{ metadata.model_type|title|replace('_', ' ') }}</p>
+                    <p><strong>Columnas necesarias:</strong> {{ metadata.feature_columns|length }}</p>
+                    <p><strong>Variable objetivo:</strong> <code>{{ metadata.target_column }}</code></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Comparación de Columnas -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Análisis de Columnas</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Columnas Encontradas ({{ compatibility.available_columns|length }})</h6>
+                    <div class="column-list">
+                        {% for col in compatibility.available_columns %}
+                        <span class="column-item {% if col in compatibility.required_columns %}column-found{% else %}column-item-neutral{% endif %}">
+                            {{ col }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <h6>Columnas Requeridas ({{ compatibility.required_columns|length }})</h6>
+                    <div class="column-list">
+                        {% for col in compatibility.required_columns %}
+                        <span class="column-item {% if col in compatibility.available_columns %}column-found{% else %}column-missing{% endif %}">
+                            {{ col }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            {% if compatibility.missing_columns %}
+            <div class="alert alert-danger mt-3">
+                <h6>Columnas Faltantes</h6>
+                <p>Las siguientes columnas son requeridas por el modelo pero no están presentes en tu archivo:</p>
+                <ul class="mb-0">
+                    {% for col in compatibility.missing_columns %}
+                    <li><code>{{ col }}</code></li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Advertencias de Tipos de Datos -->
+    {% if compatibility.type_warnings %}
+    <div class="warning-list">
+        <h6>Advertencias de Tipo de Datos</h6>
+        <p class="small text-muted">Estas columnas pueden tener tipos de datos diferentes a los esperados:</p>
+        {% for warning in compatibility.type_warnings %}
+        <div class="warning-item">{{ warning }}</div>
+        {% endfor %}
+        <p class="small text-muted mt-2">
+            <em>Nota: El sistema intentará convertir automáticamente los tipos de datos cuando sea posible.</em>
+        </p>
+    </div>
+    {% endif %}
+    
+    <!-- Vista Previa del Archivo -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Vista Previa de Datos</h5>
+        </div>
+        <div class="card-body">
+            {% if preview_data.data %}
+            <div class="table-responsive">
+                <table class="table table-sm preview-table">
+                    <thead class="table-light">
+                        <tr>
+                            {% for col in preview_data.columns %}
+                            <th>{{ col }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in preview_data.data %}
+                        <tr>
+                            {% for cell in row %}
+                            <td>{{ cell|string|truncate(50) }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <small class="text-muted">Mostrando las primeras {{ preview_data.data|length }} filas de {{ compatibility.total_rows }} totales.</small>
+            {% else %}
+            <p class="text-muted">No se pudo generar una vista previa del archivo.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Sección de Ejecución -->
+    <div class="execute-section">
+        {% if compatibility.compatible %}
+
+            <h4>¡Listo para Predecir!</h4>
+            <p class="mb-4">Tu archivo es compatible con el modelo. Procede para generar las predicciones.</p>
+            
+            <form method="POST" action="{{ url_for('prediction.execute_prediction') }}">
+                <button type="submit" class="btn btn-success btn-lg">
+                    Ejecutar Predicción
+                </button>
+            </form>
+            
+        {% else %}
+
+            <h4>No Se Puede Continuar</h4>
+            <p class="mb-4">El archivo no es compatible con el modelo. Por favor, corrige los problemas identificados.</p>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <a href="{{ url_for('prediction.predict_with_model', model_name=model_name) }}" class="btn btn-primary">
+                        Cargar Archivo Diferente
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <a href="{{ url_for('prediction.saved_models') }}" class="btn btn-outline-secondary">
+                        Volver a Modelos
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Información de Ayuda -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Consejos para la Compatibilidad</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Para resolver problemas de columnas faltantes:</h6>
+                            <ul class="small">
+                                <li>Verifica que los nombres de las columnas sean exactos</li>
+                                <li>Asegúrate de no tener espacios extra en los nombres</li>
+                                <li>Los nombres son sensibles a mayúsculas y minúsculas</li>
+                                <li>Verifica que no falten columnas en tu archivo</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Para mejorar la calidad de las predicciones:</h6>
+                            <ul class="small">
+                                <li>Asegúrate de que los datos sean del mismo formato que los de entrenamiento</li>
+                                <li>Evita valores faltantes cuando sea posible</li>
+                                <li>Usa datos limpios y consistentes</li>
+                                <li>Incluye suficientes filas para obtener resultados significativos</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Confirmar ejecución de predicción
+    const executeForm = document.querySelector('form[action*="execute_prediction"]');
+    if (executeForm) {
+        executeForm.addEventListener('submit', function(e) {
+            const submitBtn = this.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = 'Ejecutando Predicción...';
+            submitBtn.disabled = true;
+        });
+    }
+    
+    // Highlight de columnas encontradas/faltantes
+    document.querySelectorAll('.column-item').forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.05)';
+        });
+        
+        item.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+    });
+});
+</script>
+{% endblock %}

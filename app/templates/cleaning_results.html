@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Resultados de Limpieza - {{ data_info.filename }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cleaning_options.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header principal -->
+    <div class="page-header">
+        <h4>
+            Limpieza de Datos Completada
+        </h4>
+        <small><i class="fas fa-file-csv"></i> Archivo: {{ data_info.filename }}</small>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="main-card">
+                <div class="card-body">
+                    <!-- Comparación antes/después -->
+                    <div class="analysis-section mb-4">
+                        <h5>Comparación de Datos</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="recommendation-card ok">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            Datos Originales
+                                        </h6>
+                                        <div class="mt-3">
+                                            <p class="mb-1"><strong>Filas:</strong> {{ data_info.original_shape[0] if data_info.original_shape else 'N/A' }}</p>
+                                            <p class="mb-1"><strong>Columnas:</strong> {{ data_info.original_shape[1] if data_info.original_shape else 'N/A' }}</p>
+                                            <p class="mb-1"><strong>Encoding:</strong> {{ data_info.csv_encoding }}</p>
+                                            <p class="mb-0"><strong>Separador:</strong> "{{ data_info.csv_separator }}"</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="recommendation-card recommended">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            Datos Procesados
+                                        </h6>
+                                        <div class="mt-3">
+                                            <p class="mb-1"><strong>Filas:</strong> {{ data_info.data_shape[0] }}</p>
+                                            <p class="mb-1"><strong>Columnas:</strong> {{ data_info.data_shape[1] }}</p>
+                                            <p class="mb-1"><strong>Columna Objetivo:</strong> {{ data_info.target_column }}</p>
+                                            <p class="mb-0"><strong>Variables Predictoras:</strong> {{ data_info.predictor_count }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Operaciones realizadas -->
+                    {% if data_info.cleaning_report %}
+                        {% if data_info.cleaning_report is mapping and data_info.cleaning_report.get('omitted', False) %}
+                        <div class="analysis-section mb-4">
+                            <h5>Proceso de Limpieza</h5>
+                            <div class="recommendation-card warning">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <span>Se omitió el proceso de limpieza de datos. Los datos se mantendrán tal como fueron cargados.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% elif data_info.cleaning_report is iterable and data_info.cleaning_report is not string %}
+                        <div class="analysis-section mb-4">
+                            <h5>Operaciones Realizadas</h5>
+                            
+                            {% for operation in data_info.cleaning_report %}
+                            <div class="recommendation-card recommended">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <span>{{ operation }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    {% endif %}
+
+                    <!-- Estadísticas de mejora -->
+                    {% if data_info.original_shape and data_info.data_shape %}
+                    <div class="analysis-section mb-4">
+                        {% if data_info.cleaning_report is mapping and data_info.cleaning_report.get('omitted', False) %}
+                        <h5>Estado de los Datos</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="recommendation-card ok">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">
+                                            Filas Totales
+                                        </h6>
+                                        <p class="card-text">{{ data_info.data_shape[0] }} filas</p>
+                                        <span class="badge bg-info">Sin cambios</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="recommendation-card ok">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">
+                                            Columnas Totales
+                                        </h6>
+                                        <p class="card-text">{{ data_info.data_shape[1] }} columnas</p>
+                                        <span class="badge bg-info">Sin cambios</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <h5>Resumen de Cambios</h5>
+                        
+                        <div class="row">
+                            {% set rows_change = data_info.data_shape[0] - data_info.original_shape[0] %}
+                            {% set cols_change = data_info.data_shape[1] - data_info.original_shape[1] %}
+                            
+                            <div class="col-md-6">
+                                <div class="recommendation-card {% if rows_change == 0 %}ok{% elif rows_change > 0 %}recommended{% else %}warning{% endif %}">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">
+                                            Filas Procesadas
+                                        </h6>
+                                        {% if rows_change != 0 %}
+                                            <p class="card-text">
+                                                {{ rows_change|abs }} filas {% if rows_change > 0 %}añadidas{% else %}removidas{% endif %}
+                                            </p>
+                                            <span class="badge {% if rows_change > 0 %}bg-success{% else %}bg-warning{% endif %}">
+                                                {% if rows_change > 0 %}Añadidas{% else %}Optimizadas{% endif %}
+                                            </span>
+                                        {% else %}
+                                            <p class="card-text">Sin cambios en filas</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="recommendation-card {% if cols_change == 0 %}ok{% elif cols_change > 0 %}recommended{% else %}warning{% endif %}">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">
+                                            Columnas Procesadas
+                                        </h6>
+                                        {% if cols_change != 0 %}
+                                            <p class="card-text">
+                                                {{ cols_change|abs }} columnas {% if cols_change > 0 %}añadidas{% else %}optimizadas{% endif %}
+                                            </p>
+                                            <span class="badge {% if cols_change > 0 %}bg-success{% else %}bg-info{% endif %}">
+                                                {% if cols_change > 0 %}Añadidas{% else %}Optimizadas{% endif %}
+                                            </span>
+                                        {% else %}
+                                            <p class="card-text">Sin cambios en columnas</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Botones de acción -->
+                    <div class="action-buttons mt-4">
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="{{ url_for('training.training') }}" class="btn btn-success btn-lg">
+                                Continuar al Entrenamiento
+                            </a>
+                            <a href="{{ url_for('data.cleaning_options') }}" class="btn btn-outline-secondary">
+                                Modificar Limpieza
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

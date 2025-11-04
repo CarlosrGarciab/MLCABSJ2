@@ -1,0 +1,446 @@
+{% extends "base.html" %}
+
+{% block title %}Análisis de Reglas de Asociación{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/association_rules.css') }}">
+<style>
+    .gradient-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 1rem;
+        border-radius: 15px;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .gradient-header h2 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .gradient-header .subtitle {
+        font-size: 1.2rem;
+        font-weight: 300;
+        opacity: 0.9;
+        margin-bottom: 0;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    
+    .config-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .config-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+    }
+    
+    .section-card {
+        background: #f8f9ff;
+        border: 2px solid #e3e8ff;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .section-card:hover {
+        border-color: #667eea;
+        background: #ffffff;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+    }
+    
+    .section-title {
+        color: #4c51bf;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 8px;
+        border: 2px solid #e3e8ff;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .btn-custom {
+        border-radius: 25px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        border: none;
+    }
+    
+    .btn-execute {
+        background: linear-gradient(135deg, #56ccf2 0%, #2f80ed 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(47, 128, 237, 0.4);
+    }
+    
+    .btn-execute:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(47, 128, 237, 0.6);
+        color: white;
+    }
+    
+    .btn-back {
+        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        color: #4a5568;
+    }
+    
+    .btn-back:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(168, 237, 234, 0.4);
+        color: #2d3748;
+    }
+    
+    .info-card {
+        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        border: none;
+        border-radius: 12px;
+        color: #744210;
+    }
+    
+    .parameter-grid {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    }
+    
+    .icon-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        font-size: 1.1rem;
+    }
+    
+    .checkbox-custom {
+        accent-color: #667eea;
+        transform: scale(1.2);
+        margin-right: 0.75rem;
+    }
+    
+    .selection-buttons {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .btn-select {
+        border-radius: 20px;
+        padding: 0.5rem 1.25rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-select-all {
+        background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+        border: none;
+        color: #065f46;
+    }
+    
+    .btn-select-all:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(132, 250, 176, 0.4);
+        color: #065f46;
+    }
+    
+    .btn-deselect-all {
+        background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+        border: none;
+        color: #c05621;
+    }
+    
+    .btn-deselect-all:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(255, 234, 167, 0.4);
+        color: #c05621;
+    }
+    
+    .page-title {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 700;
+        font-size: 2.5rem;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    /* Estilos personalizados para el scroll de selección de columnas */
+    .columns-selection-container::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .columns-selection-container::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 4px;
+    }
+    
+    .columns-selection-container::-webkit-scrollbar-thumb {
+        background: #cbd5e0;
+        border-radius: 4px;
+    }
+    
+    .columns-selection-container::-webkit-scrollbar-thumb:hover {
+        background: #a0aec0;
+    }
+    
+    /* Para Firefox */
+    .columns-selection-container {
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e0 #f1f5f9;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header Principal -->
+    <div class="gradient-header">
+        <h2>Análisis de Reglas de Asociación</h2>
+        <p class="subtitle">Descubre patrones ocultos en tus datos</p>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="row justify-content-center">
+                <div class="col-xl-10">
+                    <div class="config-card card">
+                        <div class="card-body">
+                            <form method="POST">
+                                <!-- Tipo de análisis -->
+                                <div class="section-card">
+                                    <div class="section-title">
+                                        <h5 class="mb-0">Tipo de Análisis</h5>
+                                    </div>
+                                    <select name="analysis_type" id="analysis_type" class="form-select form-select-lg" onchange="toggleAnalysisType()">
+                                        <option value="basket">Análisis de Canasta (columnas como items)</option>
+                                        <option value="transaction">Análisis Transaccional (items en una columna)</option>
+                                    </select>
+                                    <div class="alert alert-info border-0 mt-3" style="background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); color: #3730a3;">
+                                        <strong>Canasta:</strong> Cada columna representa un item (formato binario).<br>
+                                        <strong>Transaccional:</strong> Una columna contiene todos los items separados por comas.
+                                    </div>
+                                </div>
+
+                                <!-- Configuración para análisis de canasta -->
+                                <div id="basket_config" class="section-card">
+                                    <div class="section-title">
+                                        <h5 class="mb-0">Selección de Columnas</h5>
+                                    </div>
+                                    
+                                    <!-- Botones de selección mejorados -->
+                                    <div class="selection-buttons">
+                                        <button type="button" class="btn btn-select btn-select-all" onclick="selectAllItems()">
+                                            Seleccionar Todo
+                                        </button>
+                                        <button type="button" class="btn btn-select btn-deselect-all" onclick="deselectAllItems()">
+                                            Deseleccionar Todo
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="columns-selection-container" style="max-height: 400px; overflow-y: auto; overflow-x: hidden; padding: 10px; border: 1px solid #e3e8ff; border-radius: 8px; background: #f8f9ff;">
+                                        <div class="row g-3">
+                                            {% for column in columns %}
+                                            <div class="col-lg-4 col-md-6">
+                                                <div class="form-check p-3 border rounded-3" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); transition: all 0.3s ease;">
+                                                    <input class="form-check-input checkbox-custom item-checkbox" type="checkbox" 
+                                                           name="item_columns" value="{{ column }}" 
+                                                           id="item_{{ loop.index }}">
+                                                    <label class="form-check-label fw-medium text-gray-700" for="item_{{ loop.index }}" style="cursor: pointer;">
+                                                        {{ column }}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Configuración para análisis transaccional -->
+                                <div id="transaction_config" class="section-card" style="display: none;">
+                                    <div class="section-title">
+                                        <h5 class="mb-0">Configuración Transaccional</h5>
+                                    </div>
+                                    <div class="input-group input-group-lg">
+                                        <span class="input-group-text">
+                                            Columna
+                                        </span>
+                                        <select name="transaction_column" id="transaction_column" class="form-select">
+                                            <option value="">Selecciona una columna...</option>
+                                            {% for column in columns %}
+                                            <option value="{{ column }}">{{ column }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="alert alert-warning border-0 mt-3" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #92400e;">
+                                        La columna debe contener items separados por comas (ej: "pan, leche, huevos").
+                                    </div>
+                                </div>
+
+                                <!-- Configuración de Variable Target -->
+                                <div class="section-card">
+                                    <div class="section-title">
+                                        <h5 class="mb-0">Variable Objetivo</h5>
+                                    </div>
+                                    <div class="input-group input-group-lg">
+                                        <span class="input-group-text">
+                                            Target
+                                        </span>
+                                        <select name="target_variable" id="target_variable" class="form-select">
+                                            <option value="">Sin target específico - generar todas las reglas</option>
+                                            {% for column in columns %}
+                                            <option value="{{ column }}">{{ column }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="alert alert-success border-0 mt-3" style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #065f46;">
+                                        <strong>Target específico:</strong> Genera reglas que predicen esta variable.
+                                    </div>
+                                </div>
+
+                                <!-- Selección de Algoritmo -->
+                                <div class="section-card">
+                                    <div class="section-title">
+                                        <h5 class="mb-0">Algoritmo de Reglas de Asociación</h5>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="form-check p-3 border rounded-3" style="background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);">
+                                                <input class="form-check-input" type="radio" name="algorithm" value="apriori" id="algorithm_apriori" checked>
+                                                <label class="form-check-label fw-medium" for="algorithm_apriori">
+                                                    <strong>Apriori</strong><br>
+                                                    <small class="text-muted">Algoritmo clásico, ideal para datasets pequeños a medianos</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check p-3 border rounded-3" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);">
+                                                <input class="form-check-input" type="radio" name="algorithm" value="fpgrowth" id="algorithm_fpgrowth">
+                                                <label class="form-check-label fw-medium" for="algorithm_fpgrowth">
+                                                    <strong>FP-Growth</strong><br>
+                                                    <small class="text-muted">Más eficiente, ideal para datasets grandes</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Parámetros del algoritmo -->
+                                <div class="section-card">
+                                    <div class="section-title">
+                                        <h5 class="mb-0">Parámetros del Algoritmo</h5>
+                                    </div>
+                                    <div class="parameter-grid">
+                                        <div class="row g-4">
+                                            <div class="col-md-6 col-lg-3">
+                                                <label for="min_support" class="form-label fw-semibold text-primary">
+                                                    Soporte Mínimo
+                                                </label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">%</span>
+                                                    <input type="number" name="min_support" id="min_support" 
+                                                           class="form-control" value="0.1" min="0.01" max="1" step="0.01">
+                                                </div>
+                                                <small class="form-text text-muted mt-1">
+                                                    Frecuencia: 0.01 - 1.0
+                                                </small>
+                                            </div>
+                                            <div class="col-md-6 col-lg-3">
+                                                <label for="min_confidence" class="form-label fw-semibold text-primary">
+                                                    Confianza Mínima
+                                                </label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">%</span>
+                                                    <input type="number" name="min_confidence" id="min_confidence" 
+                                                           class="form-control" value="0.6" min="0.01" max="1" step="0.01">
+                                                </div>
+                                                <small class="form-text text-muted mt-1">
+                                                    Confianza: 0.01 - 1.0
+                                                </small>
+                                            </div>
+                                            <div class="col-md-6 col-lg-3">
+                                                <label for="max_itemset_length" class="form-label fw-semibold text-primary">
+                                                    Longitud Máxima
+                                                </label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">#</span>
+                                                    <input type="number" name="max_itemset_length" id="max_itemset_length" 
+                                                           class="form-control" placeholder="5 (recomendado)" min="2" max="10" value="5">
+                                                </div>
+                                                <small class="form-text text-muted mt-1">
+                                                    Sin límite: muy lento
+                                                </small>
+                                            </div>
+                                            <div class="col-md-6 col-lg-3">
+                                                <label for="max_rules" class="form-label fw-semibold text-primary">
+                                                    Máximo de Reglas
+                                                </label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">#</span>
+                                                    <input type="number" name="max_rules" id="max_rules" 
+                                                           class="form-control" value="100" min="10" max="1000" step="10">
+                                                </div>
+                                                <small class="form-text text-muted mt-1">
+                                                    Cantidad: 10-1000
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Botones de Acción -->
+                                <div class="d-flex justify-content-between align-items-center mt-4">
+                                    <a href="{{ url_for('training.training') }}" 
+                                       class="btn btn-outline-secondary btn-lg rounded-pill shadow hover-lift">
+                                        <span>Volver al Hub</span>
+                                    </a>
+                                    <button type="submit" 
+                                            class="btn btn-gradient-primary btn-lg rounded-pill shadow hover-lift">
+                                        <span class="fw-bold">Ejecutar Análisis</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/association_rules.js') }}"></script>
+{% endblock %}
